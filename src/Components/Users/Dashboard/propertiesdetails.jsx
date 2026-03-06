@@ -8,7 +8,7 @@ import Sidebar from "./Navbar";
 import VideoPlayer from "./Videoplayer";
 import InspectionModal from "./Inspectionmodal";
 import { MOCK_PROPERTIES } from "./MockData";
-import { BLUE, NAVY, WHITE, formatPrice } from "./constant";
+import { BLUE, NAVY, WHITE, formatPrice } from "./Constant";
 
 const PropertyDetail = () => {
   const { id } = useParams();

@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { Play, Pause, Volume2, VolumeX } from "lucide-react";
-import { BLUE, WHITE } from "./constant";
+import { BLUE, WHITE } from "./Constant";
 
 const VideoPlayer = ({ videoUrl, fallbackImage, title }) => {
   const videoRef = useRef(null);
