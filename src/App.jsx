@@ -9,6 +9,7 @@ import WalletPage from './Components/Agents/Wallet/Wallet'
 import AdashBoard from './Components/Agents/Dashboard/Dashboard'
 import CreateListingPage from './Components/Agents/Dashboard/Createlistingpage'
 import Sidebar from './Components/Agents/navbar'
+import AgentOrdersPage from './Components/Agents/Bookings/AgentOrders'
 
 const NAV_W = 260
 
@@ -61,9 +62,11 @@ function App() {
 
         {/* Agent routes — all wrapped with the agent sidebar */}
         <Route path="/agent-dashboard" element={<AgentLayout><AdashBoard /></AgentLayout>} />
-        <Route path="/agent-bookings"  element={<AgentLayout><MyBookings /></AgentLayout>} />
+        <Route path="/agent-bookings"  element={<AgentLayout><AgentOrdersPage /></AgentLayout>} />
         <Route path="/wallet"          element={<AgentLayout><WalletPage /></AgentLayout>} />
         <Route path="/create-listing"  element={<AgentLayout><CreateListingPage /></AgentLayout>} />
+        <Route path="/profile"  element={<AgentLayout><ProfilePage /></AgentLayout>} />
+
       </Routes>
     </BrowserRouter>
   )

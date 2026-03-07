@@ -733,8 +733,8 @@ export default function NestFind() {
           </div>
           <div className="grid md:grid-cols-2 gap-8">
             {[
-              { role:"Buyer",        img:"https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80", desc:"Browse hundreds of verified listings, compare properties, book inspections, and track every step from your personal dashboard." },
-              { role:"Seller/Agent", img:"https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=600&q=80", desc:"List properties, manage client inquiries, schedule inspections, and grow your real estate business with powerful agent tools." },
+              { role:"Client",        img:"https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80", desc:"Browse hundreds of verified listings, compare properties, book inspections, and track every step from your personal dashboard." },
+              { role:"Agent", img:"https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=600&q=80", desc:"List properties, manage client inquiries, schedule inspections, and grow your real estate business with powerful agent tools." },
             ].map(({ role, img, desc }) => (
               <div key={role} className="rounded-3xl overflow-hidden shadow-xl border border-gray-100 flex flex-col md:flex-row">
                 <img src={img} alt={role} className="w-full md:w-56 h-48 md:h-auto object-cover"/>

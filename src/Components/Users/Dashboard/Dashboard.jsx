@@ -345,7 +345,7 @@ export default function UserDashboard() {
   const [properties, setProperties] = useState(MOCK_PROPERTIES);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const PER_PAGE = 4;
+  const PER_PAGE = 8;
 
   /* ── Swap this block with your real API call ──────────────────────────────
   useEffect(() => {
@@ -521,7 +521,7 @@ export default function UserDashboard() {
           ) : paginated.length > 0 ? (
             <div style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+              gridTemplateColumns: "repeat(4, 1fr)",
               gap: 24, marginBottom: 36,
             }}>
               {paginated.map(p => <PropertyCard key={p._id} property={p} />)}
