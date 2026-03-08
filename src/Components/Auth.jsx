@@ -409,10 +409,10 @@ const Auth = () => {
       setError('Passwords do not match.'); return;
     }
     setError(''); setIsLoading(true); setLoginSuccess(false);
-    const base = import.meta.env.VITE_API_BASE_URL || 'https://nestfind-api.onrender.com';
+    const base = import.meta.env.VITE_API_BASE_URL || 'https://gtimeconnect.onrender.com';
     const endpoint = isRegister
-      ? (userType === 'user' ? '/api/user/register' : '/api/agent/register')
-      : '/api/auth/login';
+      ? (userType === 'user' ? '/api/v1/users/register' : '/api/v1/agents/register')
+      : (userType === 'user' ? '/api/v1/users/login' : '/api/v1/agents/login');
     const payload = isRegister
       ? { firstName:formData.firstName, lastName:formData.lastName,
           email:formData.email, password:formData.password,
@@ -438,6 +438,8 @@ const Auth = () => {
           email: userData.email,
         }));
         setLoginSuccess(true);
+        const route = userType === 'user' ? '/dashboard' : '/agent-dashboard';
+        setTimeout(() => navigate(route, { replace: true }), 1200);
       } else {
         // Registration succeeded — move to OTP screen; keep the email
         setRegEmail(formData.email);
@@ -454,9 +456,9 @@ const Auth = () => {
   const handleVerifyCode = async (e) => {
     e.preventDefault();
     setError(''); setIsVerifying(true);
-    const base = import.meta.env.VITE_API_BASE_URL || 'https://nestfind-api.onrender.com';
+    const base = import.meta.env.VITE_API_BASE_URL || 'https://gtimeconnect.onrender.com';
     try {
-      const res = await axios.post(`${base}/api/auth/verify-email`, {
+      const res = await axios.post(`${base}/api/v1/auth/verify`, {
         otp: verificationCode,
         email: registeredEmail,
       });
@@ -487,8 +489,8 @@ const Auth = () => {
 
   const handleResend = async () => {
     setResending(true); setError('');
-    const base = import.meta.env.VITE_API_BASE_URL || 'https://nestfind-api.onrender.com';
-    try { await axios.post(`${base}/api/auth/resend-code`, { email: registeredEmail }); }
+    const base = import.meta.env.VITE_API_BASE_URL || 'https://gtimeconnect.onrender.com';
+    try { await axios.post(`${base}/api/v1/auth/resend-verification`, { email: registeredEmail }); }
     catch (err) { setError(err.response?.data?.message || 'Failed to resend.'); }
     finally { setResending(false); }
   };

@@ -15,7 +15,7 @@ const NIGERIAN_STATES = [
   "Taraba","Yobe","Zamfara",
 ];
 
-const API_BASE = "https://nestfind-api.onrender.com";
+const API_BASE = "https://gtimeconnect.onrender.com";
 
 /* ─── Demo Properties ───────────────────────────────────────────────────── */
 const DEMO_PROPERTIES = [
@@ -110,7 +110,7 @@ function AuthModal({ onClose }) {
 
     const isReg = tab === "register";
     const endpoint = isReg
-      ? (userType === "user" ? "/api/user/register" : "/api/agent/register")
+      ? (userType === "user" ? "/api/v1/users/registerr" : "/api/v1/agents/register")
       : "/api/auth/login";
 
     const payload = isReg
@@ -152,7 +152,7 @@ function AuthModal({ onClose }) {
     e.preventDefault();
     setError(""); setVerifying(true);
     try {
-      const res  = await fetch(`${API_BASE}/api/auth/verify-email`, {
+      const res  = await fetch(`${API_BASE}/api/v1/auth/verify`, {
         method:"POST", headers:{ "Content-Type":"application/json" },
         body: JSON.stringify({ otp, email: regEmail }),
       });
@@ -178,7 +178,7 @@ function AuthModal({ onClose }) {
   const handleResend = async () => {
     setResending(true); setError("");
     try {
-      await fetch(`${API_BASE}/api/auth/resend-code`, {
+      await fetch(`${API_BASE}/api/v1/auth/resend-verification`, {
         method:"POST", headers:{ "Content-Type":"application/json" },
         body: JSON.stringify({ email: regEmail }),
       });
