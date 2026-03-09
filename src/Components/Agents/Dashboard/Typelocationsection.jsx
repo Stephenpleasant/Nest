@@ -142,16 +142,28 @@ export default function TypeLocationSection({ data, onChange }) {
         />
       </div>
 
-      {/* Address */}
-      <div className="flex flex-col gap-1.5">
-        <label className="text-sm font-medium text-gray-700">Address</label>
-        <input
-          type="text"
-          placeholder="Enter Address/Estate"
-          value={data.address}
-          onChange={(e) => onChange("address", e.target.value)}
-          className="w-full h-10 px-3 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition"
-        />
+      {/* Address + ZipCode */}
+      <div className="grid grid-cols-3 gap-4">
+        <div className="col-span-2 flex flex-col gap-1.5">
+          <label className="text-sm font-medium text-gray-700">Address</label>
+          <input
+            type="text"
+            placeholder="Enter Address/Estate"
+            value={data.address}
+            onChange={(e) => onChange("address", e.target.value)}
+            className="w-full h-10 px-3 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition"
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium text-gray-700">Zip Code <span className="text-red-500">*</span></label>
+          <input
+            type="text"
+            placeholder="e.g. 100001"
+            value={data.zipCode || ""}
+            onChange={(e) => onChange("zipCode", e.target.value)}
+            className="w-full h-10 px-3 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition"
+          />
+        </div>
       </div>
     </div>
   );

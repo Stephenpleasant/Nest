@@ -6,107 +6,6 @@ import {
   BedDouble, Bath, Maximize2, ChevronDown,
 } from "lucide-react";
 
-/* ─── REPLACE THIS WITH YOUR BACKEND FETCH ──────────────────────────────────
-   Expected shape per property:
-   {
-     _id: string,
-     title: string,
-     location: string,
-     price: number,
-     image: string,          // URL
-     agent: {
-       name: string,
-       avatar: string,       // URL
-     },
-     bedrooms: number,
-     bathrooms: number,
-     sqft: number,
-     type: "rent" | "sale",
-   }
-────────────────────────────────────────────────────────────────────────────── */
-const MOCK_PROPERTIES = [
-  {
-    _id: "1",
-    title: "3 Bedroom Duplex",
-    location: "Victoria Island, Lagos",
-    city: "Victoria Island", propertyType: "Duplex",
-    price: 2500000,
-    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&q=80",
-    agent: { name: "Emeka Okafor", avatar: "https://i.pravatar.cc/40?img=11" },
-    bedrooms: 3, bathrooms: 2, sqft: 1800, type: "rent",
-  },
-  {
-    _id: "2",
-    title: "Modern 2-Bedroom Flat",
-    location: "Lekki Phase 1, Lagos",
-    city: "Lekki", propertyType: "Flat",
-    price: 1800000,
-    image: "https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=600&q=80",
-    agent: { name: "Ngozi Adeyemi", avatar: "https://i.pravatar.cc/40?img=22" },
-    bedrooms: 2, bathrooms: 2, sqft: 1200, type: "rent",
-  },
-  {
-    _id: "3",
-    title: "5 Bedroom Mansion",
-    location: "Ikoyi, Lagos",
-    city: "Ikoyi", propertyType: "Mansion",
-    price: 85000000,
-    image: "https://images.unsplash.com/photo-1613977257363-707ba9348227?w=600&q=80",
-    agent: { name: "Femi Adedayo", avatar: "https://i.pravatar.cc/40?img=33" },
-    bedrooms: 5, bathrooms: 4, sqft: 4500, type: "sale",
-  },
-  {
-    _id: "4",
-    title: "Studio Apartment",
-    location: "Yaba, Lagos",
-    city: "Yaba", propertyType: "Apartment",
-    price: 650000,
-    image: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=600&q=80",
-    agent: { name: "Amara Eze", avatar: "https://i.pravatar.cc/40?img=44" },
-    bedrooms: 1, bathrooms: 1, sqft: 500, type: "rent",
-  },
-  {
-    _id: "5",
-    title: "4 Bedroom Terrace",
-    location: "Ajah, Lagos",
-    city: "Ajah", propertyType: "Terrace",
-    price: 45000000,
-    image: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=600&q=80",
-    agent: { name: "Tunde Bello", avatar: "https://i.pravatar.cc/40?img=55" },
-    bedrooms: 4, bathrooms: 3, sqft: 2800, type: "sale",
-  },
-  {
-    _id: "6",
-    title: "Mini Flat (Self-Contain)",
-    location: "Surulere, Lagos",
-    city: "Surulere", propertyType: "Flat",
-    price: 480000,
-    image: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=600&q=80",
-    agent: { name: "Chioma Nwosu", avatar: "https://i.pravatar.cc/40?img=66" },
-    bedrooms: 1, bathrooms: 1, sqft: 420, type: "rent",
-  },
-  {
-    _id: "7",
-    title: "3 Bedroom Bungalow",
-    location: "Magodo, Lagos",
-    city: "Magodo", propertyType: "Bungalow",
-    price: 38000000,
-    image: "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=600&q=80",
-    agent: { name: "Lanre Ogundimu", avatar: "https://i.pravatar.cc/40?img=7" },
-    bedrooms: 3, bathrooms: 2, sqft: 1600, type: "sale",
-  },
-  {
-    _id: "8",
-    title: "Luxury Penthouse",
-    location: "Eko Atlantic, Lagos",
-    city: "Eko Atlantic", propertyType: "Penthouse",
-    price: 12000000,
-    image: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=600&q=80",
-    agent: { name: "Sandra Igwe", avatar: "https://i.pravatar.cc/40?img=8" },
-    bedrooms: 4, bathrooms: 3, sqft: 3200, type: "rent",
-  },
-];
-
 const formatPrice = (price) =>
   "₦" + new Intl.NumberFormat("en-NG").format(price);
 
@@ -201,7 +100,7 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
         <div style={{ padding: "12px 12px 28px" }}>
           <div style={{ height: 1, background: "#f3f4f6", margin: "0 8px 12px" }} />
           <button
-            onClick={() => { localStorage.removeItem("token"); window.location.href = "/login"; }}
+            onClick={() => { localStorage.removeItem("token"); localStorage.removeItem("user"); localStorage.removeItem("nestfind_user"); window.location.href = "/"; }}
             style={{
               display: "flex", alignItems: "center", gap: 12,
               padding: "11px 14px", borderRadius: 12,
@@ -342,30 +241,57 @@ export default function UserDashboard() {
   const [filter, setFilter] = useState("all");
   const [cityFilter, setCityFilter] = useState("All Cities");
   const [typeFilter, setTypeFilter] = useState("All Types");
-  const [properties, setProperties] = useState(MOCK_PROPERTIES);
-  const [loading, setLoading] = useState(false);
+  const [properties, setProperties] = useState([]);
+  const [loading, setLoading]       = useState(true);
+  const [fetchError, setFetchError] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const PER_PAGE = 8;
 
-  /* ── Swap this block with your real API call ──────────────────────────────
   useEffect(() => {
     const fetchProperties = async () => {
       setLoading(true);
+      setFetchError("");
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/properties/all`, {
+        const base = import.meta.env.VITE_API_BASE_URL || "https://gtimeconnect.onrender.com";
+        const res = await fetch(`${base}/api/v1/properties/all`, {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
         const data = await res.json();
-        setProperties(data.properties || data.data || data);
+        // Normalise whatever shape the API returns
+        // API can return: { data: { properties: [] } } or { properties: [] } or []
+        const inner = data.data ?? data;
+        const list = Array.isArray(inner)
+          ? inner
+          : (inner.properties || inner.data || []);
+        if (!Array.isArray(list)) throw new Error("Unexpected API response shape");
+        // Map API fields → shape the card expects
+        const mapped = list.map(p => ({
+          _id:          p._id || p.id,
+          title:        p.title,
+          location:     [p.area, p.city, p.state].filter(Boolean).join(", "),
+          city:         p.city,
+          propertyType: p.type,
+          price:        p.price,
+          type:         p.purpose === "sale" ? "sale" : "rent",
+          bedrooms:     p.bedrooms ?? 0,
+          bathrooms:    p.bathrooms ?? 0,
+          sqft:         p.propertySize ?? 0,
+          image:        p.images?.[0] || "https://placehold.co/600x400/e5e7eb/6b7280?text=Property",
+          agent: {
+            name:   p.agent?.name   || p.agentName   || "Agent",
+            avatar: p.agent?.avatar || p.agentAvatar || "",
+          },
+        }));
+        setProperties(mapped);
       } catch (err) {
         console.error(err);
+        setFetchError("Could not load properties. Please try again later.");
       } finally {
         setLoading(false);
       }
     };
     fetchProperties();
   }, []);
-  ───────────────────────────────────────────────────────────────────────────── */
 
   const filtered = properties.filter(p => {
     const matchType   = filter === "all" || p.type === filter;
@@ -517,6 +443,11 @@ export default function UserDashboard() {
               }} />
               <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
               <p style={{ fontSize: 14, color: "#6b7280" }}>Loading properties…</p>
+            </div>
+          ) : fetchError ? (
+            <div style={{ textAlign: "center", padding: "60px 20px" }}>
+              <div style={{ fontSize: 48, marginBottom: 12 }}>⚠️</div>
+              <p style={{ fontSize: 16, fontWeight: 600, color: "#374151" }}>{fetchError}</p>
             </div>
           ) : paginated.length > 0 ? (
             <div style={{

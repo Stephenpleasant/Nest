@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 import './index.css'
 import LandingPage from './Components/Dashboard'
 import UserDashboard from './Components/Users/Dashboard/Dashboard'
@@ -13,12 +14,42 @@ import AgentOrdersPage from './Components/Agents/Bookings/AgentOrders'
 
 const NAV_W = 260
 
-// Wraps all agent pages with the fixed sidebar
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+const getUser = () => {
+  try { return JSON.parse(localStorage.getItem('user') || '{}') } catch { return {} }
+}
+
+const isAuthenticated = () => {
+  try {
+    const token = localStorage.getItem('token')
+    const user  = getUser()
+    return !!(token && token !== 'undefined' && token !== 'null' && user && Object.keys(user).length)
+  } catch { return false }
+}
+
+const getRedirectPath = () => {
+  try {
+    const user = getUser()
+    if (!isAuthenticated()) return '/'
+    return user.userType === 'agent' ? '/agent-dashboard' : '/dashboard'
+  } catch { return '/' }
+}
+
+// ── Protected Route ───────────────────────────────────────────────────────────
+
+function ProtectedRoute({ children, agentOnly = false }) {
+  if (!isAuthenticated()) return <Navigate to="/" replace />
+  if (agentOnly && getUser().userType !== 'agent') return <Navigate to="/dashboard" replace />
+  return children
+}
+
+// ── Agent Layout ──────────────────────────────────────────────────────────────
+
 function AgentLayout({ children }) {
   const navigate = useNavigate()
   const location = useLocation()
 
-  // Each key matches exactly the NavLink `id` in navbar.jsx
   const routeMap = {
     'Dashboard':        '/agent-dashboard',
     'Bookings':         '/agent-bookings',
@@ -27,12 +58,10 @@ function AgentLayout({ children }) {
     'My Profile':       '/profile',
   }
 
-  // Highlight the correct nav item based on current URL
   const activePage = Object.entries(routeMap).find(
     ([, path]) => path === location.pathname
   )?.[0] ?? 'Dashboard'
 
-  // Called by navbar.jsx when user clicks a nav item
   const handleNavigate = (page) => {
     const path = routeMap[page]
     if (path) navigate(path)
@@ -48,24 +77,70 @@ function AgentLayout({ children }) {
   )
 }
 
+// ── App ───────────────────────────────────────────────────────────────────────
+
 function App() {
+  const [, setToken] = useState(localStorage.getItem('token'))
+
+  // Re-render when token changes (e.g. after login in another tab)
+  useEffect(() => {
+    const sync = () => setToken(localStorage.getItem('token'))
+    window.addEventListener('storage', sync)
+    return () => window.removeEventListener('storage', sync)
+  }, [])
+
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public / user routes */}
-        <Route path="/"               element={<LandingPage />} />
-        <Route path="/dashboard"      element={<UserDashboard />} />
-        <Route path="/userdashboard"  element={<UserDashboard />} />
-        <Route path="/properties/:id" element={<PropertyDetail />} />
-        <Route path="/bookings"       element={<MyBookings />} />
-        <Route path="/profile"        element={<ProfilePage />} />
 
-        {/* Agent routes — all wrapped with the agent sidebar */}
-        <Route path="/agent-dashboard" element={<AgentLayout><AdashBoard /></AgentLayout>} />
-        <Route path="/agent-bookings"  element={<AgentLayout><AgentOrdersPage /></AgentLayout>} />
-        <Route path="/wallet"          element={<AgentLayout><WalletPage /></AgentLayout>} />
-        <Route path="/create-listing"  element={<AgentLayout><CreateListingPage /></AgentLayout>} />
-        <Route path="/profile"  element={<AgentLayout><ProfilePage /></AgentLayout>} />
+        {/* ── Landing page — redirect to dashboard if already logged in ── */}
+        <Route
+          path="/"
+          element={isAuthenticated() ? <Navigate to={getRedirectPath()} replace /> : <LandingPage />}
+        />
+
+        {/* ── User routes ── */}
+        <Route
+          path="/dashboard"
+          element={<ProtectedRoute><UserDashboard /></ProtectedRoute>}
+        />
+        <Route
+          path="/userdashboard"
+          element={<ProtectedRoute><UserDashboard /></ProtectedRoute>}
+        />
+        <Route
+          path="/bookings"
+          element={<ProtectedRoute><MyBookings /></ProtectedRoute>}
+        />
+        <Route
+          path="/profile"
+          element={<ProtectedRoute><ProfilePage /></ProtectedRoute>}
+        />
+        <Route
+          path="/properties/:id"
+          element={<PropertyDetail />}
+        />
+
+        {/* ── Agent routes ── */}
+        <Route
+          path="/agent-dashboard"
+          element={<ProtectedRoute agentOnly><AgentLayout><AdashBoard /></AgentLayout></ProtectedRoute>}
+        />
+        <Route
+          path="/agent-bookings"
+          element={<ProtectedRoute agentOnly><AgentLayout><AgentOrdersPage /></AgentLayout></ProtectedRoute>}
+        />
+        <Route
+          path="/wallet"
+          element={<ProtectedRoute agentOnly><AgentLayout><WalletPage /></AgentLayout></ProtectedRoute>}
+        />
+        <Route
+          path="/create-listing"
+          element={<ProtectedRoute agentOnly><AgentLayout><CreateListingPage /></AgentLayout></ProtectedRoute>}
+        />
+
+        {/* ── Fallback ── */}
+        <Route path="*" element={<Navigate to="/" replace />} />
 
       </Routes>
     </BrowserRouter>

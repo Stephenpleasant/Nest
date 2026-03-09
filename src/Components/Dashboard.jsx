@@ -110,12 +110,18 @@ function AuthModal({ onClose }) {
 
     const isReg = tab === "register";
     const endpoint = isReg
-      ? (userType === "user" ? "/api/v1/users/registerr" : "/api/v1/agents/register")
-      : "/api/auth/login";
+      ? (userType === "user" ? "/api/v1/users/register" : "/api/v1/agents/register")
+      : (userType === "user" ? "/api/v1/auth/user/login" : "/api/v1/auth/agent/login");
 
     const payload = isReg
-      ? { firstName:form.firstName, lastName:form.lastName, email:form.email,
-          password:form.password, phone:form.phone, address:form.address, state:form.state }
+      ? { fullName:        `${form.firstName} ${form.lastName}`.trim(),
+          email:           form.email,
+          password:        form.password,
+          confirmPassword: form.confirmPassword,
+          phone:           form.phone,
+          address:         form.address,
+          state:           form.state,
+          role:            userType === "agent" ? "agent" : "user" }
       : { email:form.email, password:form.password };
 
     try {
@@ -127,16 +133,19 @@ function AuthModal({ onClose }) {
       if (!res.ok) throw new Error(data.message || "Operation failed. Please try again.");
 
       if (!isReg) {
+        const responseData = data.data ?? data;
+        const token = responseData.token ?? data.token;
+        const apiUser = responseData.user ?? responseData;
         const ud = {
-          ...(data.user ?? data), userType,
-          name:  data.user?.firstName ? `${data.user.firstName} ${data.user.lastName}`.trim() : data.name ?? "",
-          email: data.user?.email ?? data.email ?? form.email,
+          ...apiUser, userType,
+          name:  apiUser?.firstName ? `${apiUser.firstName} ${apiUser.lastName}`.trim() : apiUser?.name ?? "",
+          email: apiUser?.email ?? form.email,
         };
-        localStorage.setItem("token", data.token);
+        localStorage.setItem("token", token);
         localStorage.setItem("user",  JSON.stringify({ ...ud, userType }));
         localStorage.setItem("nestfind_user", JSON.stringify({ name:ud.name, email:ud.email }));
         setLoginOk(true);
-        setTimeout(() => onClose("login_success"), 1200);
+        setTimeout(() => { window.location.href = userType === "user" ? "/dashboard" : "/agent-dashboard"; }, 1200);
       } else {
         setRegEmail(form.email);
         reset(true);
@@ -154,21 +163,24 @@ function AuthModal({ onClose }) {
     try {
       const res  = await fetch(`${API_BASE}/api/v1/auth/verify`, {
         method:"POST", headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({ otp, email: regEmail }),
+        body: JSON.stringify({ otp, email: regEmail, role: userType }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Invalid code. Please try again.");
-      if (data.token) {
+      const verifyData = data.data ?? data;
+      const verifyToken = verifyData.token ?? data.token;
+      if (verifyToken) {
+        const apiUser = verifyData.user ?? verifyData;
         const ud = {
-          ...(data.user ?? data), userType,
-          name:  data.user?.firstName ? `${data.user.firstName} ${data.user.lastName}`.trim() : data.name ?? "",
-          email: data.user?.email ?? data.email ?? regEmail,
+          ...apiUser, userType,
+          name:  apiUser?.firstName ? `${apiUser.firstName} ${apiUser.lastName}`.trim() : apiUser?.name ?? "",
+          email: apiUser?.email ?? regEmail,
         };
-        localStorage.setItem("token", data.token);
+        localStorage.setItem("token", verifyToken);
         localStorage.setItem("user",  JSON.stringify({ ...ud, userType }));
         localStorage.setItem("nestfind_user", JSON.stringify({ name:ud.name, email:ud.email }));
       }
-      onClose("verified");
+      window.location.href = userType === "user" ? "/dashboard" : "/agent-dashboard";
     } catch (err) {
       setError(err.message);
     } finally { setVerifying(false); }
@@ -178,7 +190,7 @@ function AuthModal({ onClose }) {
   const handleResend = async () => {
     setResending(true); setError("");
     try {
-      await fetch(`${API_BASE}/api/v1/auth/resend-verification`, {
+      await fetch(`${API_BASE}/auth/resend-verification`, {
         method:"POST", headers:{ "Content-Type":"application/json" },
         body: JSON.stringify({ email: regEmail }),
       });

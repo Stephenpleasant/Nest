@@ -47,7 +47,7 @@ const selectBase = {
 };
 
 /* ══════════════════════════════════════════════════════════════════════════════
-   PAGE SHELL — defined OUTSIDE Auth so it never re-mounts on keystrokes
+   PAGE SHELL
 ══════════════════════════════════════════════════════════════════════════════ */
 const Shell = ({ children }) => (
   <>
@@ -55,278 +55,74 @@ const Shell = ({ children }) => (
       @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@600;700;800&display=swap');
       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
       html, body { height: 100%; font-family: 'Inter', sans-serif; }
-
       @keyframes fadeUp  { from { opacity:0; transform:translateY(28px); } to { opacity:1; transform:translateY(0); } }
       @keyframes spin    { to   { transform: rotate(360deg); } }
       @keyframes shimmer { 0%,100% { opacity:.55; } 50% { opacity:.8; } }
-
       input::placeholder, textarea::placeholder { color: #9ca3af; }
       select option { color: #0b1a2e; }
-
-      /* scrollbar - always visible branded bar */
       ::-webkit-scrollbar { width: 8px; }
       ::-webkit-scrollbar-track { background: rgba(229,231,235,0.6); border-radius: 4px; }
       ::-webkit-scrollbar-thumb { background: #1a56db; border-radius: 4px; border: 1px solid rgba(255,255,255,0.3); }
       ::-webkit-scrollbar-thumb:hover { background: #1444b8; }
-
-      /* auth page root */
-      .auth-page {
-        min-height: 100vh;
-        display: flex;
-        align-items: flex-start;
-        justify-content: center;
-        padding: 120px 16px 60px;
-        position: relative;
-        overflow-y: auto;
-        overflow-x: hidden;
-        font-family: 'Inter', sans-serif;
-      }
-
-      /* full-bleed background photo */
-      .auth-bg {
-        position: fixed;
-        inset: 0;
-        background-image: url('https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1800&q=85');
-        background-size: cover;
-        background-position: center;
-        background-attachment: fixed;
-        z-index: 0;
-      }
-
-      /* warm colour wash + blur on top of image */
-      .auth-bg::after {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(
-          135deg,
-          rgba(11,26,46,0.72) 0%,
-          rgba(26,86,219,0.38) 50%,
-          rgba(7,20,34,0.80) 100%
-        );
-        backdrop-filter: blur(3px);
-        -webkit-backdrop-filter: blur(3px);
-      }
-
-      /* floating glow orbs */
+      .auth-page { min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 120px 16px 60px; position: relative; overflow-y: auto; overflow-x: hidden; font-family: 'Inter', sans-serif; }
+      .auth-bg { position: fixed; inset: 0; background-image: url('https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1800&q=85'); background-size: cover; background-position: center; background-attachment: fixed; z-index: 0; }
+      .auth-bg::after { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(11,26,46,0.72) 0%, rgba(26,86,219,0.38) 50%, rgba(7,20,34,0.80) 100%); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
       .orb { position: fixed; border-radius: 50%; pointer-events: none; z-index: 1; animation: shimmer 6s ease-in-out infinite; }
       .orb-1 { width:420px; height:420px; top:-100px; right:-80px;  background: radial-gradient(circle, rgba(26,86,219,0.28) 0%, transparent 70%); }
       .orb-2 { width:320px; height:320px; bottom:-80px; left:-60px; background: radial-gradient(circle, rgba(96,165,250,0.22) 0%, transparent 70%); animation-delay: 3s; }
       .orb-3 { width:200px; height:200px; top:40%;  left:5%;        background: radial-gradient(circle, rgba(26,86,219,0.15) 0%, transparent 70%); animation-delay: 1.5s; }
-
-      /* always show scrollbar so page is scrollable */
-      html {
-        overflow-y: scroll;
-        scrollbar-width: thin;
-        scrollbar-color: #1a56db rgba(229,231,235,0.6);
-      }
+      html { overflow-y: scroll; scrollbar-width: thin; scrollbar-color: #1a56db rgba(229,231,235,0.6); }
       body { overflow-x: hidden; }
-
-      /* card */
-      .auth-card {
-        position: relative;
-        z-index: 10;
-        width: 100%;
-        max-width: 760px;
-        margin-top: 20px;
-        background: rgba(255,255,255,0.97);
-        border-radius: 24px;
-        box-shadow: 0 40px 100px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.15);
-        overflow: hidden;
-        animation: fadeUp .55s cubic-bezier(.16,1,.3,1) both;
-      }
-
-      /* rainbow top stripe */
-      .auth-card-topbar {
-        height: 5px;
-        background: linear-gradient(90deg, #1a56db 0%, #60a5fa 40%, #3b82f6 70%, #1a56db 100%);
-        background-size: 200% 100%;
-      }
-
+      .auth-card { position: relative; z-index: 10; width: 100%; max-width: 760px; margin-top: 20px; background: rgba(255,255,255,0.97); border-radius: 24px; box-shadow: 0 40px 100px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.15); overflow: hidden; animation: fadeUp .55s cubic-bezier(.16,1,.3,1) both; }
+      .auth-card-topbar { height: 5px; background: linear-gradient(90deg, #1a56db 0%, #60a5fa 40%, #3b82f6 70%, #1a56db 100%); background-size: 200% 100%; }
       .auth-card-body { padding: 44px 48px 34px; }
-
-      /* back button */
-      .back-btn {
-        position: fixed;
-        top: 20px; left: 20px;
-        z-index: 20;
-        display: flex; align-items: center; gap: 7px;
-        color: rgba(255,255,255,0.9);
-        background: rgba(255,255,255,0.12);
-        border: 1px solid rgba(255,255,255,0.22);
-        backdrop-filter: blur(8px);
-        border-radius: 10px;
-        padding: 8px 16px;
-        font-size: 13px; font-weight: 500;
-        text-decoration: none;
-        transition: background .2s;
-      }
+      .back-btn { position: fixed; top: 20px; left: 20px; z-index: 20; display: flex; align-items: center; gap: 7px; color: rgba(255,255,255,0.9); background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22); backdrop-filter: blur(8px); border-radius: 10px; padding: 8px 16px; font-size: 13px; font-weight: 500; text-decoration: none; transition: background .2s; }
       .back-btn:hover { background: rgba(255,255,255,0.2); }
-
-      /* logo row */
-      .logo-row {
-        display: flex; align-items: center; gap: 10px;
-        justify-content: center;
-        margin-bottom: 8px;
-      }
-      .logo-icon {
-        width: 40px; height: 40px;
-        background: ${BLUE};
-        border-radius: 10px;
-        display: grid; place-items: center;
-        box-shadow: 0 4px 14px rgba(26,86,219,0.35);
-      }
-      .logo-text {
-        font-family: 'Poppins', sans-serif;
-        font-weight: 800; font-size: 22px;
-        color: ${NAVY};
-      }
+      .logo-row { display: flex; align-items: center; gap: 10px; justify-content: center; margin-bottom: 8px; }
+      .logo-icon { width: 40px; height: 40px; background: ${BLUE}; border-radius: 10px; display: grid; place-items: center; box-shadow: 0 4px 14px rgba(26,86,219,0.35); }
+      .logo-text { font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 22px; color: ${NAVY}; }
       .logo-text span { color: ${BLUE}; }
-
-      /* tagline under logo */
-      .logo-tag {
-        text-align: center;
-        font-size: 12px;
-        color: #9ca3af;
-        letter-spacing: 1.2px;
-        text-transform: uppercase;
-        margin-bottom: 26px;
-        font-weight: 500;
-      }
-
-      /* role toggle */
-      .role-wrap {
-        display: flex;
-        background: ${LIGHTBG};
-        border-radius: 13px;
-        padding: 4px; gap: 4px;
-        margin-bottom: 22px;
-      }
-      .role-btn {
-        flex: 1; display: flex; align-items: center; justify-content: center;
-        gap: 7px; padding: 10px 12px; border-radius: 10px; border: none;
-        font-size: 14px; font-weight: 500;
-        cursor: pointer; transition: all .22s;
-        font-family: 'Inter', sans-serif;
-      }
-      .role-btn.active {
-        background: ${BLUE}; color: white; font-weight: 700;
-        box-shadow: 0 4px 16px rgba(26,86,219,0.3);
-      }
+      .logo-tag { text-align: center; font-size: 12px; color: #9ca3af; letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 26px; font-weight: 500; }
+      .role-wrap { display: flex; background: ${LIGHTBG}; border-radius: 13px; padding: 4px; gap: 4px; margin-bottom: 22px; }
+      .role-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px; padding: 10px 12px; border-radius: 10px; border: none; font-size: 14px; font-weight: 500; cursor: pointer; transition: all .22s; font-family: 'Inter', sans-serif; }
+      .role-btn.active { background: ${BLUE}; color: white; font-weight: 700; box-shadow: 0 4px 16px rgba(26,86,219,0.3); }
       .role-btn.inactive { background: transparent; color: ${GREY}; }
-
-      /* tabs */
       .tab-row { display: flex; border-bottom: 2px solid ${BORDER}; margin-bottom: 22px; }
-      .tab-btn {
-        flex: 1; padding: 10px 0; text-align: center;
-        font-size: 14px; font-weight: 600;
-        border: none; background: none; cursor: pointer;
-        transition: color .2s; margin-bottom: -2px;
-        font-family: 'Inter', sans-serif;
-      }
+      .tab-btn { flex: 1; padding: 10px 0; text-align: center; font-size: 14px; font-weight: 600; border: none; background: none; cursor: pointer; transition: color .2s; margin-bottom: -2px; font-family: 'Inter', sans-serif; }
       .tab-btn.active  { color: ${BLUE};  border-bottom: 2px solid ${BLUE}; }
       .tab-btn.inactive{ color: ${GREY}; border-bottom: 2px solid transparent; }
-
-      /* grid */
       .col2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
       .field-wrap { margin-bottom: 15px; position: relative; }
-      label.field-label {
-        display: block; font-size: 13.5px; font-weight: 600;
-        color: #1f2937; margin-bottom: 6px; letter-spacing: 0.2px;
-      }
-
-      /* password eye */
+      label.field-label { display: block; font-size: 13.5px; font-weight: 600; color: #1f2937; margin-bottom: 6px; letter-spacing: 0.2px; }
       .pass-wrap { position: relative; }
-      .eye-btn {
-        position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
-        background: none; border: none; cursor: pointer;
-        color: ${GREY}; display: flex; align-items: center; padding: 0;
-      }
-
-      /* error box */
-      .error-box {
-        background: #fef2f2; border: 1px solid #fecaca;
-        border-radius: 9px; padding: 10px 14px;
-        color: #dc2626; font-size: 13.5px; margin-bottom: 16px;
-        display: flex; align-items: center; gap: 8px;
-      }
-
-      /* match hint */
+      .eye-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: ${GREY}; display: flex; align-items: center; padding: 0; }
+      .error-box { background: #fef2f2; border: 1px solid #fecaca; border-radius: 9px; padding: 10px 14px; color: #dc2626; font-size: 13.5px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
       .hint-ok  { font-size: 12px; margin-top: 4px; color: #16a34a; }
       .hint-err { font-size: 12px; margin-top: 4px; color: #dc2626; }
-
-      /* submit */
-      .submit-btn {
-        width: 100%; padding: 13px 0;
-        background: ${BLUE}; color: white;
-        border: none; border-radius: 11px;
-        font-size: 15px; font-weight: 700;
-        cursor: pointer; margin-top: 8px;
-        transition: background .2s, transform .15s, box-shadow .2s;
-        box-shadow: 0 6px 22px rgba(26,86,219,0.35);
-        letter-spacing: 0.3px; font-family: 'Inter', sans-serif;
-      }
+      .submit-btn { width: 100%; padding: 13px 0; background: ${BLUE}; color: white; border: none; border-radius: 11px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 8px; transition: background .2s, transform .15s, box-shadow .2s; box-shadow: 0 6px 22px rgba(26,86,219,0.35); letter-spacing: 0.3px; font-family: 'Inter', sans-serif; }
       .submit-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 10px 28px rgba(26,86,219,0.42); }
       .submit-btn:disabled { background: #9ca3af; cursor: not-allowed; box-shadow: none; transform: none; }
-
       .switch-row  { text-align: center; margin-top: 18px; font-size: 14px; color: ${GREY}; }
       .switch-link { color: ${BLUE}; font-weight: 600; background: none; border: none; cursor: pointer; font-size: 14px; font-family: 'Inter', sans-serif; }
-
-      /* otp */
       .otp-wrap { text-align: center; padding: 10px 0; }
-      .otp-icon {
-        width: 72px; height: 72px; border-radius: 50%;
-        background: ${LIGHTBG}; display: grid; place-items: center;
-        margin: 0 auto 18px;
-        box-shadow: 0 4px 16px rgba(26,86,219,0.12);
-      }
-      .otp-input {
-        width: 100%; padding: 14px; text-align: center;
-        border: 1.5px solid ${BORDER}; border-radius: 9px;
-        font-size: 26px; letter-spacing: 14px; font-weight: 700; color: ${NAVY};
-        outline: none; box-sizing: border-box; margin-bottom: 16px;
-        font-family: 'Inter', sans-serif;
-        transition: border-color .2s, box-shadow .2s;
-      }
-
-      /* forgot link */
-      .forgot-link {
-        text-align: right; margin-top: -8px; margin-bottom: 14px;
-      }
+      .otp-icon { width: 72px; height: 72px; border-radius: 50%; background: ${LIGHTBG}; display: grid; place-items: center; margin: 0 auto 18px; box-shadow: 0 4px 16px rgba(26,86,219,0.12); }
+      .otp-input { width: 100%; padding: 14px; text-align: center; border: 1.5px solid ${BORDER}; border-radius: 9px; font-size: 26px; letter-spacing: 14px; font-weight: 700; color: ${NAVY}; outline: none; box-sizing: border-box; margin-bottom: 16px; font-family: 'Inter', sans-serif; transition: border-color .2s, box-shadow .2s; }
+      .forgot-link { text-align: right; margin-top: -8px; margin-bottom: 14px; }
       .forgot-link a { font-size: 13px; color: ${BLUE}; font-weight: 500; text-decoration: none; }
       .forgot-link a:hover { text-decoration: underline; }
-
-      /* spinner */
-      .spinner {
-        width:17px; height:17px;
-        border: 2px solid rgba(255,255,255,0.3);
-        border-top-color: white;
-        border-radius: 50%;
-        display: inline-block;
-        animation: spin .7s linear infinite;
-      }
+      .spinner { width:17px; height:17px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; display: inline-block; animation: spin .7s linear infinite; }
       .spin-row { display:flex; align-items:center; justify-content:center; gap:9px; }
-
-      @media (max-width: 600px) {
-        .auth-card-body { padding: 28px 22px 24px; }
-        .col2 { grid-template-columns: 1fr; }
-        .auth-card { border-radius: 18px; }
-      }
+      @media (max-width: 600px) { .auth-card-body { padding: 28px 22px 24px; } .col2 { grid-template-columns: 1fr; } .auth-card { border-radius: 18px; } }
     `}</style>
-
     <div className="auth-page">
       <div className="auth-bg"/>
       <div className="orb orb-1"/><div className="orb orb-2"/><div className="orb orb-3"/>
-
       <Link to="/" className="back-btn">
         <ArrowLeft size={14}/> Back to Home
       </Link>
-
       <div className="auth-card">
         <div className="auth-card-topbar"/>
         <div className="auth-card-body">
-
-          {/* Logo */}
           <div className="logo-row">
             <div className="logo-icon">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
@@ -337,7 +133,6 @@ const Shell = ({ children }) => (
             <span className="logo-text">Nest<span>find</span></span>
           </div>
           <p className="logo-tag">Nigeria's trusted real estate platform</p>
-
           {children}
         </div>
         <div style={{ height:5, background:`linear-gradient(90deg,${BLUE} 0%,#60a5fa 50%,${BLUE} 100%)` }}/>
@@ -373,9 +168,7 @@ const Auth = () => {
   const location = useLocation();
 
   useEffect(() => {
-    // Only infer from URL on initial mount; manual toggle overrides this
     if (location.pathname.includes('/agent')) setUserType('agent');
-    else setUserType('user');
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -412,42 +205,71 @@ const Auth = () => {
     const base = import.meta.env.VITE_API_BASE_URL || 'https://gtimeconnect.onrender.com';
     const endpoint = isRegister
       ? (userType === 'user' ? '/api/v1/users/register' : '/api/v1/agents/register')
-      : (userType === 'user' ? '/api/v1/users/login' : '/api/v1/agents/login');
+      : (userType === 'user' ? '/api/v1/auth/user/login' : '/api/v1/auth/agent/login');
+
+    const rawPhone = formData.phone.replace(/\s/g, '');
+    const phone = rawPhone.startsWith('+234')
+      ? '0' + rawPhone.slice(4)
+      : rawPhone.startsWith('234') && rawPhone.length >= 13
+        ? '0' + rawPhone.slice(3)
+        : rawPhone;
+
     const payload = isRegister
-      ? { firstName:formData.firstName, lastName:formData.lastName,
+      ? { fullName:`${formData.firstName} ${formData.lastName}`.trim(),
           email:formData.email, password:formData.password,
-          phone:formData.phone, address:formData.address, state:formData.state }
+          confirmPassword:formData.confirmPassword,
+          phone, address:formData.address, state:formData.state,
+          role: userType === 'agent' ? 'agent' : 'user' }
       : { email:formData.email, password:formData.password };
+
     try {
       const res = await axios.post(`${base}${endpoint}`, payload);
+
       if (!isRegister) {
-        // Persist token + user for the whole app
+        const responseData = res.data.data ?? res.data;
+
+        // ── KEY FIX: For agent login the API returns { token, agent: {...} }
+        // For user login it returns { token, user: {...} }
+        // We check for agent first, then user, then fallback to the whole object
+        const apiUser = responseData.agent ?? responseData.user ?? responseData;
+        const token = responseData.token ?? res.data.token;
+
         const userData = {
-          ...res.data.user ?? res.data,
+          ...apiUser,
+          // Explicitly preserve the nested 'agent' object if it exists.
+          // CreateListingPage reads parsedUser.agent._id to get the agent's ID.
+          agent: responseData.agent ?? apiUser?.agent ?? undefined,
           userType,
-          name:  res.data.user?.firstName
-            ? `${res.data.user.firstName} ${res.data.user.lastName}`.trim()
-            : res.data.name ?? '',
-          email: res.data.user?.email ?? res.data.email ?? formData.email,
+          name: apiUser?.firstName
+            ? `${apiUser.firstName} ${apiUser.lastName}`.trim()
+            : apiUser?.name ?? '',
+          email: apiUser?.email ?? formData.email,
         };
-        localStorage.setItem('token', res.data.token);
+
+        console.log('Login response data:', JSON.stringify(responseData, null, 2));
+        console.log('Saving userData to localStorage:', JSON.stringify(userData, null, 2));
+
+        localStorage.setItem('token', token);
         localStorage.setItem('user', JSON.stringify({ ...userData, userType }));
-        // Also save under nestfind_user so booking modal can read it
         localStorage.setItem('nestfind_user', JSON.stringify({
           name:  userData.name,
           email: userData.email,
         }));
         setLoginSuccess(true);
         const route = userType === 'user' ? '/dashboard' : '/agent-dashboard';
-        setTimeout(() => navigate(route, { replace: true }), 1200);
+        setTimeout(() => { window.location.href = route; }, 1200);
       } else {
-        // Registration succeeded — move to OTP screen; keep the email
         setRegEmail(formData.email);
-        resetForm(true);   // keepEmail=true so registeredEmail stays set
+        resetForm(true);
         setShowCodeInput(true);
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Operation failed. Please try again.');
+      const apiMsg = err.response?.data?.message
+        || err.response?.data?.error
+        || (typeof err.response?.data === 'string' ? err.response.data : null)
+        || `Error ${err.response?.status}: Operation failed. Please try again.`;
+      console.error('Auth error:', err.response?.data);
+      setError(apiMsg);
     } finally {
       setIsLoading(false);
     }
@@ -462,16 +284,20 @@ const Auth = () => {
         otp: verificationCode,
         email: registeredEmail,
       });
-      if (res.data.token) {
+      const verifyData = res.data.data ?? res.data;
+      const verifyToken = verifyData.token ?? res.data.token;
+      if (verifyToken) {
+        const apiUser = verifyData.agent ?? verifyData.user ?? verifyData;
         const userData = {
-          ...res.data.user ?? res.data,
+          ...apiUser,
+          agent: verifyData.agent ?? apiUser?.agent ?? undefined,
           userType,
-          name:  res.data.user?.firstName
-            ? `${res.data.user.firstName} ${res.data.user.lastName}`.trim()
-            : res.data.name ?? '',
-          email: res.data.user?.email ?? res.data.email ?? registeredEmail,
+          name: apiUser?.firstName
+            ? `${apiUser.firstName} ${apiUser.lastName}`.trim()
+            : apiUser?.name ?? '',
+          email: apiUser?.email ?? registeredEmail,
         };
-        localStorage.setItem('token', res.data.token);
+        localStorage.setItem('token', verifyToken);
         localStorage.setItem('user', JSON.stringify({ ...userData, userType }));
         localStorage.setItem('nestfind_user', JSON.stringify({
           name:  userData.name,
@@ -565,7 +391,6 @@ const Auth = () => {
         ))}
       </div>
 
-      {/* Heading */}
       <h1 style={{ fontFamily:"'Poppins',sans-serif", fontWeight:700, fontSize:"1.45rem", color:NAVY, textAlign:"center", marginBottom:4 }}>
         {isRegister ? `Create ${userType === 'user' ? 'User' : 'Agent'} Account` : 'Welcome Back'}
       </h1>
@@ -582,21 +407,17 @@ const Auth = () => {
           onClick={() => { setIsRegister(true); resetForm(); }}>Create Account</button>
       </div>
 
-      {/* Success feedback */}
       {loginSuccess && (
         <div style={{ background:"#f0fdf4", border:"1px solid #bbf7d0", borderRadius:9, padding:"10px 14px", color:"#15803d", fontSize:13.5, marginBottom:16, display:"flex", alignItems:"center", gap:8 }}>
           ✓ Signed in successfully! Redirecting…
         </div>
       )}
 
-      {/* Error */}
       {error && <div className="error-box"><AlertCircle size={15}/>{error}</div>}
 
-      {/* ── Form ── */}
       <form onSubmit={handleSubmit}>
         {isRegister && (
           <>
-            {/* Row 1: First + Last */}
             <div className="col2">
               <div className="field-wrap">
                 <label className="field-label">First Name</label>
@@ -613,8 +434,6 @@ const Auth = () => {
                   required disabled={isLoading} autoComplete="family-name"/>
               </div>
             </div>
-
-            {/* Row 2: Email + Phone */}
             <div className="col2">
               <div className="field-wrap">
                 <label className="field-label">Email Address</label>
@@ -631,8 +450,6 @@ const Auth = () => {
                   required disabled={isLoading} autoComplete="tel"/>
               </div>
             </div>
-
-            {/* Row 3: Address + State */}
             <div className="col2">
               <div className="field-wrap">
                 <label className="field-label">Street Address</label>
@@ -652,8 +469,6 @@ const Auth = () => {
                 </select>
               </div>
             </div>
-
-            {/* Row 4: Password + Confirm */}
             <div className="col2">
               <div className="field-wrap">
                 <label className="field-label">Password</label>
@@ -709,7 +524,6 @@ const Auth = () => {
           </>
         )}
 
-        {/* Sign-in only */}
         {!isRegister && (
           <>
             <div className="field-wrap">

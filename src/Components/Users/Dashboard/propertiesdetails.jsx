@@ -7,8 +7,9 @@ import {
 import Sidebar from "./Navbar";
 import VideoPlayer from "./Videoplayer";
 import InspectionModal from "./Inspectionmodal";
-import { MOCK_PROPERTIES } from "./MockData";
 import { BLUE, NAVY, WHITE, formatPrice } from "./Constant";
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://gtimeconnect.onrender.com";
 
 const PropertyDetail = () => {
   const { id } = useParams();
@@ -21,11 +22,47 @@ const PropertyDetail = () => {
 
   useEffect(() => {
     setLoading(true);
-    setTimeout(() => {
-      const found = MOCK_PROPERTIES.find(p => p._id === id);
-      setProperty(found || null);
-      setLoading(false);
-    }, 600);
+    const fetchProperty = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/properties/details/${id}`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        });
+        const data = await res.json();
+        const p = data.property || data.data || data;
+        // Normalise API shape to what the UI expects
+        const mapped = {
+          _id:          p._id || p.id,
+          title:        p.title,
+          location:     [p.area, p.city, p.state].filter(Boolean).join(", "),
+          address:      [p.street, p.area, p.city, p.state, p.country].filter(Boolean).join(", "),
+          price:        p.price,
+          type:         p.purpose === "sale" ? "sale" : "rent",
+          propertyType: p.type,
+          bedrooms:     p.bedrooms ?? 0,
+          bathrooms:    p.bathrooms ?? 0,
+          toilets:      p.toilets ?? 0,
+          sqft:         p.propertySize ?? 0,
+          yearBuilt:    p.yearBuilt ?? "—",
+          parking:      p.parking ?? 0,
+          description:  p.description || "",
+          features:     Array.isArray(p.features) ? p.features : [],
+          image:        p.images?.[0] || "https://placehold.co/1400x900/e5e7eb/6b7280?text=Property",
+          videoUrl:     p.videos?.[0] || null,
+          agent: {
+            name:   p.agent?.name   || p.agentName   || "Agent",
+            avatar: p.agent?.avatar || p.agentAvatar || "",
+            phone:  p.agent?.phone  || p.agentPhone  || "",
+          },
+        };
+        setProperty(mapped);
+      } catch (err) {
+        console.error(err);
+        setProperty(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProperty();
   }, [id]);
 
   if (loading) return (
