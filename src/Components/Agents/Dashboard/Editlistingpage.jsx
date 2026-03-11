@@ -1,10 +1,11 @@
 // src/Components/Agents/Dashboard/EditListingPage.jsx
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import DescriptionSection  from "./DescriptionSection";
 import TypeLocationSection from "./Typelocationsection";
 import PriceSection        from "./PriceSection";
+import DetailsSection      from "./Detailssection";
 import FeaturesSection     from "./Featureection";
 import MediaUploadSection  from "./Mediauploadsection";
 
@@ -16,68 +17,96 @@ const EMPTY_FORM = {
   type: "", purpose: "", label: "",
   state: "", city: "", area: "", address: "", zipCode: "",
   currency: "NGN", price: "", agencyFee: "", duration: "monthly",
+  // Details
+  bedrooms: "", bathrooms: "", toilets: "",
+  propertySize: "", propertySizePostfix: "Sqft", parking: "",
+  noOfPlots: "", landSize: "", landSizePostfix: "Sqft",
+  // Features
   features: [], otherFeatures: "",
   images: [], videos: [],
 };
 
-// Map API response fields → form fields
-const apiToForm = (p) => ({
-  propertyTitle: p.title        || "",
-  description:   p.description  || "",
-  type:          p.propertyType || p.type    || "",
-  purpose:       p.purpose      || "",
-  label:         p.label        || "",
-  state:         p.state        || "",
-  city:          p.city         || "",
-  area:          p.area         || "",
-  address:       p.street       || p.address || "",
-  zipCode:       p.zipCode      || "",
-  currency:      p.currency     || "NGN",
-  price:         p.price        ? String(p.price) : "",
-  agencyFee:     p.inspectionFee ? String(p.inspectionFee) : "",
-  duration:      p.duration     || "monthly",
-  features:      Array.isArray(p.features) ? p.features : [],
-  otherFeatures: p.otherFeatures || "",
-  // Existing images from API — kept as { url, name } (no .file means they're already uploaded)
-  images: Array.isArray(p.images)
-    ? p.images.map((img) => ({
-        url:  typeof img === "string" ? img : (img.url || img),
-        name: typeof img === "string" ? "image" : (img.name || "image"),
-        existing: true,
-      }))
-    : [],
-  videos: p.video
-    ? [{ url: p.video, name: "video", existing: true }]
-    : [],
-});
+const normaliseImage = (img) => {
+  if (!img) return null;
+  if (typeof img === "string") return { url: img, name: "image", existing: true };
+  if (img.url || img.secure_url) return { url: img.url || img.secure_url, name: img.name || "image", existing: true };
+  return null;
+};
+
+const normaliseVideo = (vid) => {
+  if (!vid) return null;
+  if (typeof vid === "string") return { url: vid, name: "video", existing: true };
+  if (vid.url || vid.secure_url) return { url: vid.url || vid.secure_url, name: vid.name || "video", existing: true };
+  return null;
+};
+
+const apiToForm = (p) => {
+  const images = Array.isArray(p.images)
+    ? p.images.map(normaliseImage).filter(Boolean)
+    : [];
+
+  let videos = [];
+  if (p.video) {
+    const v = normaliseVideo(p.video);
+    if (v) videos = [v];
+  } else if (Array.isArray(p.videos) && p.videos.length > 0) {
+    const v = normaliseVideo(p.videos[0]);
+    if (v) videos = [v];
+  }
+
+  return {
+    propertyTitle: p.title        || "",
+    description:   p.description  || "",
+    type:          p.propertyType || p.type    || "",
+    purpose:       p.purpose      || "",
+    label:         p.label        || "",
+    state:         p.state        || "",
+    city:          p.city         || "",
+    area:          p.area         || "",
+    address:       p.street       || p.address || "",
+    zipCode:       p.zipCode      || "",
+    currency:      p.currency     || "NGN",
+    price:         p.price        ? String(p.price) : "",
+    agencyFee:     p.inspectionFee ? String(p.inspectionFee) : "",
+    duration:      p.duration     || "monthly",
+    // Details
+    bedrooms:            p.bedrooms            ? String(p.bedrooms)   : "",
+    bathrooms:           p.bathrooms           ? String(p.bathrooms)  : "",
+    toilets:             p.toilets             ? String(p.toilets)    : "",
+    propertySize:        p.propertySize        ? String(p.propertySize) : "",
+    propertySizePostfix: p.propertySizePostfix || "Sqft",
+    parking:             p.parking             ? String(p.parking)   : "",
+    noOfPlots:           p.noOfPlots           ? String(p.noOfPlots) : "",
+    landSize:            p.landSize            ? String(p.landSize)  : "",
+    landSizePostfix:     p.landSizePostfix     || "Sqft",
+    // Features
+    features:      Array.isArray(p.features) ? p.features : [],
+    otherFeatures: p.otherFeatures || "",
+    images,
+    videos,
+  };
+};
 
 export default function EditListingPage() {
-  const { id }     = useParams();
-  const navigate   = useNavigate();
-  const location   = useLocation();
+  const { id }   = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const [form, setForm]               = useState(EMPTY_FORM);
-  const [loading, setLoading]         = useState(true);
-  const [fetchError, setFetchError]   = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState("");
+  const [form, setForm]                   = useState(EMPTY_FORM);
+  const [loading, setLoading]             = useState(true);
+  const [fetchError, setFetchError]       = useState("");
+  const [isSubmitting, setIsSubmitting]   = useState(false);
+  const [submitError, setSubmitError]     = useState("");
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
-  const descEditorRef = useRef(null);
-
-  // ── Load property — from router state (passed by dashboard) or fetch fallback ──
   useEffect(() => {
     const passedListing = location.state?.listing;
-
     if (passedListing) {
-      // Data already available — no API call needed
-      const mapped = apiToForm(passedListing);
-      setForm(mapped);
+      setForm(apiToForm(passedListing));
       setLoading(false);
       return;
     }
 
-    // Fallback: try common single-property endpoints
     const fetchProperty = async () => {
       setLoading(true);
       setFetchError("");
@@ -93,12 +122,11 @@ export default function EditListingPage() {
           const { data } = await axios.get(url, { headers: { Authorization: `Bearer ${token}` } });
           const property = data?.property || data?.data || data;
           if (property && (property._id || property.id || property.title)) {
-            const mapped = apiToForm(property);
-            setForm(mapped);
+            setForm(apiToForm(property));
             setLoading(false);
             return;
           }
-        } catch (_) { /* try next */ }
+        } catch (_) {}
       }
 
       setFetchError("Failed to load property. Please go back and try again.");
@@ -111,7 +139,6 @@ export default function EditListingPage() {
   const handleChange = (name, value) =>
     setForm((prev) => ({ ...prev, [name]: value }));
 
-  // ── Submit updated property ──
   const handleSubmit = async () => {
     setSubmitError("");
 
@@ -144,17 +171,32 @@ export default function EditListingPage() {
       if (form.currency)              fd.append("currency",      form.currency);
       if (form.otherFeatures?.trim()) fd.append("otherFeatures", form.otherFeatures.trim());
 
+      // Details fields
+      if (form.bedrooms)            fd.append("bedrooms",            Number(form.bedrooms));
+      if (form.bathrooms)           fd.append("bathrooms",           Number(form.bathrooms));
+      if (form.toilets)             fd.append("toilets",             Number(form.toilets));
+      if (form.propertySize)        fd.append("propertySize",        form.propertySize);
+      if (form.propertySizePostfix) fd.append("propertySizePostfix", form.propertySizePostfix);
+      if (form.parking)             fd.append("parking",             Number(form.parking));
+      if (form.noOfPlots)           fd.append("noOfPlots",           Number(form.noOfPlots));
+      if (form.landSize)            fd.append("landSize",            form.landSize);
+      if (form.landSizePostfix)     fd.append("landSizePostfix",     form.landSizePostfix);
+
       if (form.features.length > 0) {
         form.features.forEach((f) => fd.append("features", f));
       }
 
-      // Only append NEW images (ones with a .file property)
-      form.images.forEach((img) => {
-        if (img.file) fd.append("images", img.file);
-      });
-      form.videos.forEach((vid) => {
-        if (vid.file) fd.append("video", vid.file);
-      });
+      // Existing images
+      form.images.filter(img => img.existing).forEach(img => fd.append("existingImages", img.url));
+      form.images.filter(img => img.file).forEach(img => fd.append("images", img.file));
+
+      // Video
+      const newVideo = form.videos.find(v => v.file);
+      if (newVideo) {
+        fd.append("video", newVideo.file);
+      } else if (form.videos.length > 0 && form.videos[0].existing) {
+        fd.append("existingVideo", form.videos[0].url);
+      }
 
       await axios.put(
         `${API_BASE}/api/v1/properties/edit/${id}`,
@@ -179,7 +221,6 @@ export default function EditListingPage() {
     }
   };
 
-  // ── Loading state ──
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -191,7 +232,6 @@ export default function EditListingPage() {
     );
   }
 
-  // ── Fetch error state ──
   if (fetchError) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -227,14 +267,12 @@ export default function EditListingPage() {
           </div>
         </div>
 
-        {/* Success banner */}
         {submitSuccess && (
-          <div className="mb-5 p-4 bg-green-50 border border-green-200 rounded-xl text-green-700 text-sm font-medium flex items-center gap-2">
+          <div className="mb-5 p-4 bg-green-50 border border-green-200 rounded-xl text-green-700 text-sm font-medium">
             ✓ Listing updated successfully! Redirecting...
           </div>
         )}
 
-        {/* Error banner */}
         {submitError && (
           <div className="mb-5 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm whitespace-pre-wrap">
             ⚠ {submitError}
@@ -244,10 +282,10 @@ export default function EditListingPage() {
         <DescriptionSection  data={form} onChange={handleChange} />
         <TypeLocationSection data={form} onChange={handleChange} />
         <PriceSection        data={form} onChange={handleChange} />
+        <DetailsSection      data={form} onChange={handleChange} />
         <FeaturesSection     data={form} onChange={handleChange} />
         <MediaUploadSection  data={form} onChange={handleChange} />
 
-        {/* Footer buttons */}
         <div className="flex items-center justify-between mt-6">
           <button
             type="button"

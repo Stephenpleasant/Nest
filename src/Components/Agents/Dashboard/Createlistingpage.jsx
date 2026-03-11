@@ -4,9 +4,10 @@ import axios from "axios";
 import DescriptionSection from "./DescriptionSection";
 import TypeLocationSection from "./Typelocationsection";
 import PriceSection        from "./PriceSection";
-import FeaturesSection from "./Featureection";
-import MediaUploadSection from "./Mediauploadsection";
-import FormFooter from "./Formfotter";
+import DetailsSection      from "./Detailssection";
+import FeaturesSection     from "./Featureection";
+import MediaUploadSection  from "./Mediauploadsection";
+import FormFooter          from "./Formfotter";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://gtimeconnect.onrender.com";
 
@@ -16,6 +17,11 @@ const INITIAL_FORM = {
   type: "", purpose: "", label: "",
   state: "", city: "", area: "", address: "", zipCode: "",
   currency: "NGN", price: "", agencyFee: "", duration: "monthly",
+  // Details section
+  bedrooms: "", bathrooms: "", toilets: "",
+  propertySize: "", propertySizePostfix: "Sqft", parking: "",
+  noOfPlots: "", landSize: "", landSizePostfix: "Sqft",
+  // Features
   features: [], otherFeatures: "",
   images: [], videos: [],
 };
@@ -77,6 +83,17 @@ export default function CreateListingPage() {
       if (form.currency)          fd.append("currency",      form.currency);
       if (form.otherFeatures?.trim()) fd.append("otherFeatures", form.otherFeatures.trim());
 
+      // Details fields
+      if (form.bedrooms)            fd.append("bedrooms",            Number(form.bedrooms));
+      if (form.bathrooms)           fd.append("bathrooms",           Number(form.bathrooms));
+      if (form.toilets)             fd.append("toilets",             Number(form.toilets));
+      if (form.propertySize)        fd.append("propertySize",        form.propertySize);
+      if (form.propertySizePostfix) fd.append("propertySizePostfix", form.propertySizePostfix);
+      if (form.parking)             fd.append("parking",             Number(form.parking));
+      if (form.noOfPlots)           fd.append("noOfPlots",           Number(form.noOfPlots));
+      if (form.landSize)            fd.append("landSize",            form.landSize);
+      if (form.landSizePostfix)     fd.append("landSizePostfix",     form.landSizePostfix);
+
       if (form.features.length > 0) {
         form.features.forEach((f) => fd.append("features", f));
       }
@@ -110,11 +127,6 @@ export default function CreateListingPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/*
-        On mobile the navbar becomes a fixed top bar (56px tall).
-        pt-[72px] gives clearance so content isn't hidden under it.
-        On sm+ screens the sidebar is on the left, so no top padding needed.
-      */}
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pb-20 pt-[72px] sm:pt-8">
 
         {/* Page Header */}
@@ -144,6 +156,7 @@ export default function CreateListingPage() {
         <DescriptionSection  data={form} onChange={handleChange} />
         <TypeLocationSection data={form} onChange={handleChange} />
         <PriceSection        data={form} onChange={handleChange} />
+        <DetailsSection      data={form} onChange={handleChange} />
         <FeaturesSection     data={form} onChange={handleChange} />
         <MediaUploadSection  data={form} onChange={handleChange} />
 

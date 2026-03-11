@@ -36,19 +36,22 @@ export default function InformationSection() {
   return (
     <div id="information">
       <SectionCard>
-        <div className="flex gap-8">
-          {/* Avatar */}
-          <AvatarUpload preview={avatarPreview} onFileChange={handleAvatarChange} />
+        {/* Avatar + fields — stack on mobile, side-by-side on sm+ */}
+        <div className="flex flex-col sm:flex-row gap-6 sm:gap-8">
+          {/* Avatar — centered on mobile */}
+          <div className="flex justify-center sm:justify-start">
+            <AvatarUpload preview={avatarPreview} onFileChange={handleAvatarChange} />
+          </div>
 
-          {/* Fields */}
-          <div className="flex-1 grid grid-cols-2 gap-4">
+          {/* Fields — 1 col on mobile, 2 col on sm+ */}
+          <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField label="Username" placeholder="Username" value={form.username} onChange={set('username')} />
             <FormField label="Email" placeholder="Email" value={form.email} onChange={set('email')} type="email" />
             <FormField label="First Name" placeholder="First Name" value={form.firstName} onChange={set('firstName')} />
             <FormField label="Last Name" placeholder="Last Name" value={form.lastName} onChange={set('lastName')} />
 
             {/* Public Name dropdown */}
-            <div className="flex flex-col gap-1 col-span-2">
+            <div className="flex flex-col gap-1 col-span-1 sm:col-span-2">
               <label className="text-sm font-medium text-gray-700">Select Your Public Name</label>
               <select
                 value={form.publicName}
@@ -72,7 +75,7 @@ export default function InformationSection() {
             <FormField label="Company Name" placeholder="Enter your company name" value={form.companyName} onChange={set('companyName')} />
             <FormField label="Address" placeholder="Enter your address" value={form.address} onChange={set('address')} />
 
-            <div className="flex flex-col gap-1 col-span-2">
+            <div className="flex flex-col gap-1 col-span-1 sm:col-span-2">
               <label className="text-sm font-medium text-gray-700">Service Areas</label>
               <input
                 type="text"
@@ -83,7 +86,7 @@ export default function InformationSection() {
               />
             </div>
 
-            <div className="flex flex-col gap-1 col-span-2">
+            <div className="flex flex-col gap-1 col-span-1 sm:col-span-2">
               <label className="text-sm font-medium text-gray-700">Specialties</label>
               <input
                 type="text"
@@ -94,17 +97,21 @@ export default function InformationSection() {
               />
             </div>
 
-            {/* About me rich-text area */}
-            <div className="flex flex-col gap-1 col-span-2">
+            {/* About me */}
+            <div className="flex flex-col gap-1 col-span-1 sm:col-span-2">
               <label className="text-sm font-medium text-gray-700">About me</label>
               <div className="border border-gray-200 rounded-md overflow-hidden">
                 {/* Toolbar */}
                 <div className="flex items-center gap-1 px-3 py-2 bg-gray-50 border-b border-gray-200 flex-wrap">
                   <select className="text-xs border border-gray-200 rounded px-1 py-0.5 bg-white text-gray-600 mr-2">
-                    <option>Paragraph</option><option>Heading 1</option><option>Heading 2</option>
+                    <option>Paragraph</option>
+                    <option>Heading 1</option>
+                    <option>Heading 2</option>
                   </select>
                   {['B', 'I', '≡', '⁼', '❝', '⟵', '⟶'].map((t, i) => (
-                    <button key={i} type="button" className="px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-200 rounded transition">{t}</button>
+                    <button key={i} type="button" className="px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-200 rounded transition">
+                      {t}
+                    </button>
                   ))}
                 </div>
                 <textarea

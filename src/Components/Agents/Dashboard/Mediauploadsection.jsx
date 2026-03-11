@@ -39,26 +39,54 @@ export default function MediaUploadSection({ data, onChange }) {
   const images = data.images || [];
   const videos = data.videos || [];
 
+  // ── Images ──────────────────────────────────────────────────────────────
+
   const handleImageFiles = (files) => {
     const remaining = MAX_IMAGES - images.length;
     if (remaining <= 0) return;
     const valid = Array.from(files)
       .filter((f) => f.type.startsWith("image/"))
       .slice(0, remaining);
-    const newPreviews = valid.map((f) => ({ file: f, url: URL.createObjectURL(f), name: f.name }));
+    const newPreviews = valid.map((f) => ({
+      file: f,
+      url: URL.createObjectURL(f),
+      name: f.name,
+    }));
     onChange("images", [...images, ...newPreviews]);
   };
+
+  const removeImage = (idx) => {
+    const updated = images.filter((_, i) => i !== idx);
+    // Revoke object URL for new (non-existing) images to free memory
+    const removed = images[idx];
+    if (removed && !removed.existing && removed.url?.startsWith("blob:")) {
+      URL.revokeObjectURL(removed.url);
+    }
+    onChange("images", updated);
+  };
+
+  // ── Videos ──────────────────────────────────────────────────────────────
 
   const handleVideoFile = (files) => {
     if (videos.length >= MAX_VIDEOS) return;
     const valid = Array.from(files).find((f) => f.type.startsWith("video/"));
     if (!valid) return;
+    // Revoke previous blob if replacing
+    if (videos[0] && !videos[0].existing && videos[0].url?.startsWith("blob:")) {
+      URL.revokeObjectURL(videos[0].url);
+    }
     const preview = { file: valid, url: URL.createObjectURL(valid), name: valid.name };
     onChange("videos", [preview]);
   };
 
-  const removeImage = (idx) => onChange("images", images.filter((_, i) => i !== idx));
-  const removeVideo = () => onChange("videos", []);
+  const removeVideo = () => {
+    if (videos[0] && !videos[0].existing && videos[0].url?.startsWith("blob:")) {
+      URL.revokeObjectURL(videos[0].url);
+    }
+    onChange("videos", []);
+  };
+
+  // ── Drag & Drop ──────────────────────────────────────────────────────────
 
   const handleDrop = (e, type) => {
     e.preventDefault();
@@ -74,12 +102,14 @@ export default function MediaUploadSection({ data, onChange }) {
       </h2>
       <p className="text-xs text-gray-400 mt-3 mb-5">
         Upload up to {MAX_IMAGES} images and {MAX_VIDEOS} video for your listing.
+        {images.some(i => i.existing) && (
+          <span className="ml-1 text-blue-500 font-medium">Existing media loaded — you can remove or add new files.</span>
+        )}
       </p>
 
-      {/* Stack on mobile, side-by-side on sm+ */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
 
-        {/* ── Images Upload ── */}
+        {/* ── Images ── */}
         <div>
           <div className="flex items-center justify-between mb-2">
             <label className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
@@ -88,6 +118,7 @@ export default function MediaUploadSection({ data, onChange }) {
             <span className="text-xs text-gray-400">{images.length}/{MAX_IMAGES}</span>
           </div>
 
+          {/* Upload zone — only shown when below limit */}
           {images.length < MAX_IMAGES && (
             <div
               onClick={() => imageInputRef.current?.click()}
@@ -111,16 +142,35 @@ export default function MediaUploadSection({ data, onChange }) {
                 accept="image/*"
                 multiple
                 className="hidden"
-                onChange={(e) => handleImageFiles(e.target.files)}
+                onChange={(e) => { handleImageFiles(e.target.files); e.target.value = ""; }}
               />
             </div>
           )}
 
+          {/* Previews */}
           {images.length > 0 && (
             <div className="flex gap-2 mt-3 flex-wrap">
               {images.map((img, idx) => (
-                <div key={idx} className="relative group w-[calc(50%-4px)] aspect-video rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
-                  <img src={img.url} alt={img.name} className="w-full h-full object-cover" />
+                <div
+                  key={idx}
+                  className="relative group w-[calc(50%-4px)] aspect-video rounded-lg overflow-hidden border border-gray-200 bg-gray-50"
+                >
+                  <img
+                    src={img.url}
+                    alt={img.name || `Image ${idx + 1}`}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      // If the URL fails (e.g. CORS on existing image), show placeholder
+                      e.target.style.display = "none";
+                      e.target.nextSibling?.classList.remove("hidden");
+                    }}
+                  />
+                  {/* Fallback label for images that can't be previewed */}
+                  <div className="hidden absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-400 text-xs text-center px-2">
+                    <span>📷<br />{img.name || "Existing image"}</span>
+                  </div>
+
+                  {/* Hover overlay delete (desktop) */}
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition flex items-center justify-center">
                     <button
                       type="button"
@@ -130,7 +180,8 @@ export default function MediaUploadSection({ data, onChange }) {
                       <TrashIcon />
                     </button>
                   </div>
-                  {/* Always-visible delete for touch (mobile) */}
+
+                  {/* Always-visible delete on mobile */}
                   <button
                     type="button"
                     onClick={() => removeImage(idx)}
@@ -138,8 +189,16 @@ export default function MediaUploadSection({ data, onChange }) {
                   >
                     <TrashIcon />
                   </button>
+
                   {idx === 0 && (
-                    <span className="absolute top-1.5 left-1.5 bg-blue-600 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded">Cover</span>
+                    <span className="absolute top-1.5 left-1.5 bg-blue-600 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded">
+                      Cover
+                    </span>
+                  )}
+                  {img.existing && (
+                    <span className="absolute bottom-1 left-1.5 bg-black/50 text-white text-[9px] px-1.5 py-0.5 rounded">
+                      Saved
+                    </span>
                   )}
                 </div>
               ))}
@@ -147,7 +206,7 @@ export default function MediaUploadSection({ data, onChange }) {
           )}
         </div>
 
-        {/* ── Video Upload ── */}
+        {/* ── Video ── */}
         <div>
           <div className="flex items-center justify-between mb-2">
             <label className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
@@ -156,6 +215,7 @@ export default function MediaUploadSection({ data, onChange }) {
             <span className="text-xs text-gray-400">{videos.length}/{MAX_VIDEOS}</span>
           </div>
 
+          {/* Upload zone */}
           {videos.length < MAX_VIDEOS && (
             <div
               onClick={() => videoInputRef.current?.click()}
@@ -178,15 +238,45 @@ export default function MediaUploadSection({ data, onChange }) {
                 type="file"
                 accept="video/*"
                 className="hidden"
-                onChange={(e) => handleVideoFile(e.target.files)}
+                onChange={(e) => { handleVideoFile(e.target.files); e.target.value = ""; }}
               />
             </div>
           )}
 
+          {/* Video preview */}
           {videos.length > 0 && (
             <div className="mt-3">
               <div className="relative group rounded-xl overflow-hidden border border-gray-200 bg-gray-50 aspect-video">
-                <video src={videos[0].url} className="w-full h-full object-cover" controls />
+                {videos[0].existing ? (
+                  // Existing video — try <video>, fall back to a link
+                  <video
+                    src={videos[0].url}
+                    className="w-full h-full object-cover"
+                    controls
+                    onError={(e) => {
+                      // Replace with a fallback UI if video can't load
+                      e.target.style.display = "none";
+                      e.target.parentElement.querySelector(".video-fallback")?.classList.remove("hidden");
+                    }}
+                  />
+                ) : (
+                  <video src={videos[0].url} className="w-full h-full object-cover" controls />
+                )}
+
+                {/* Fallback for videos that can't play inline */}
+                <div className="video-fallback hidden absolute inset-0 flex flex-col items-center justify-center bg-gray-100 text-gray-500 text-sm gap-2 p-4 text-center">
+                  <span className="text-3xl">🎬</span>
+                  <span className="font-medium">Existing video</span>
+                  <a
+                    href={videos[0].url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 underline text-xs"
+                  >
+                    Open video
+                  </a>
+                </div>
+
                 {/* Desktop hover delete */}
                 <button
                   type="button"
@@ -203,8 +293,19 @@ export default function MediaUploadSection({ data, onChange }) {
                 >
                   <TrashIcon />
                 </button>
+
+                {videos[0].existing && (
+                  <span className="absolute bottom-2 left-2 bg-black/50 text-white text-[9px] px-1.5 py-0.5 rounded">
+                    Saved
+                  </span>
+                )}
               </div>
               <p className="text-[11px] text-gray-400 mt-1.5 truncate">{videos[0].name}</p>
+              {videos[0].existing && (
+                <p className="text-[11px] text-blue-500 mt-0.5">
+                  To replace, remove this and upload a new video.
+                </p>
+              )}
             </div>
           )}
         </div>

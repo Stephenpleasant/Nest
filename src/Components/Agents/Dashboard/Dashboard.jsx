@@ -178,7 +178,6 @@ const ListingCard = ({ listing, onEdit, onDelete }) => {
   const location = [listing.city, listing.state].filter(Boolean).join(", ") || "—";
   const price = listing.price ? `${fmt(listing.price)}` : "—";
 
-  // Close menu on outside click
   useEffect(() => {
     const handler = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false); };
     document.addEventListener("mousedown", handler);
@@ -336,7 +335,6 @@ export default function AdashBoard({ onNavigate }) {
       const storedUser = localStorage.getItem("user");
       const parsedUser = storedUser ? JSON.parse(storedUser) : null;
 
-      // Resolve agent ID (same logic as CreateListingPage)
       let agentId = null;
       try {
         const a = parsedUser?.agent;
@@ -350,12 +348,10 @@ export default function AdashBoard({ onNavigate }) {
       }
 
       try {
-        // Try the endpoint — backend reads agent identity from the JWT
         const { data } = await axios.get(
           `${API_BASE}/api/v1/properties/agent/properties`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        // Handle all common response shapes
         const list =
           data?.properties ||
           data?.data       ||
@@ -399,9 +395,11 @@ export default function AdashBoard({ onNavigate }) {
     }
   };
 
-  // ── Edit handler ──
+  // ── Edit handler — pass full listing object via router state ──
   const handleEdit = (listing) => {
-    navigate(`/edit/${listing._id || listing.id}`);
+    navigate(`/edit/${listing._id || listing.id}`, {
+      state: { listing },
+    });
   };
 
   // ── Filter ──
