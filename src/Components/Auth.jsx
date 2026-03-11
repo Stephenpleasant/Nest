@@ -257,7 +257,7 @@ const Auth = () => {
         }));
         setLoginSuccess(true);
         const route = userType === 'user' ? '/dashboard' : '/agent-dashboard';
-        setTimeout(() => { window.location.href = route; }, 1200);
+        setTimeout(() => navigate(route, { replace: true }), 500);
       } else {
         setRegEmail(formData.email);
         resetForm(true);
