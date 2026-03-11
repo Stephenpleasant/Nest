@@ -17,7 +17,7 @@ const INITIAL_FORM = {
   type: "", purpose: "", label: "",
   state: "", city: "", area: "", address: "", zipCode: "",
   currency: "NGN", price: "", agencyFee: "", duration: "monthly",
-  // Details section
+  // Details
   bedrooms: "", bathrooms: "", toilets: "",
   propertySize: "", propertySizePostfix: "Sqft", parking: "",
   noOfPlots: "", landSize: "", landSizePostfix: "Sqft",
@@ -64,35 +64,33 @@ export default function CreateListingPage() {
       }
 
       const fd = new FormData();
-      fd.append("title",        form.propertyTitle.trim());
-      fd.append("propertyType", form.type);
-      fd.append("street",       form.address || "N/A");
-      fd.append("city",         form.city);
-      fd.append("state",        form.state);
-      fd.append("country",      "Nigeria");
-      fd.append("zipCode",      form.zipCode || "100001");
-      fd.append("price",        Number(form.price));
+      fd.append("title",         form.propertyTitle.trim());
+      fd.append("propertyType",  form.type);
+      fd.append("street",        form.address || "N/A");
+      fd.append("city",          form.city);
+      fd.append("state",         form.state);
+      fd.append("country",       "Nigeria");
+      fd.append("zipCode",       form.zipCode || "100001");
+      fd.append("price",         Number(form.price));
       fd.append("inspectionFee", Number(form.agencyFee) || 0);
-      fd.append("agent",        agentId);
+      fd.append("agent",         agentId);
 
-      if (form.description)       fd.append("description",   form.description);
-      if (form.area)              fd.append("area",          form.area);
-      if (form.purpose)           fd.append("purpose",       form.purpose);
-      if (form.label)             fd.append("label",         form.label);
-      if (form.duration)          fd.append("duration",      form.duration);
-      if (form.currency)          fd.append("currency",      form.currency);
+      if (form.description)           fd.append("description",   form.description);
+      if (form.area)                  fd.append("area",          form.area);
+      if (form.purpose)               fd.append("purpose",       form.purpose);
+      if (form.label)                 fd.append("label",         form.label);
+      if (form.duration)              fd.append("duration",      form.duration);
+      if (form.currency)              fd.append("currency",      form.currency);
       if (form.otherFeatures?.trim()) fd.append("otherFeatures", form.otherFeatures.trim());
 
-      // Details fields
-      if (form.bedrooms)            fd.append("bedrooms",            Number(form.bedrooms));
-      if (form.bathrooms)           fd.append("bathrooms",           Number(form.bathrooms));
-      if (form.toilets)             fd.append("toilets",             Number(form.toilets));
-      if (form.propertySize)        fd.append("propertySize",        form.propertySize);
-      if (form.propertySizePostfix) fd.append("propertySizePostfix", form.propertySizePostfix);
-      if (form.parking)             fd.append("parking",             Number(form.parking));
-      if (form.noOfPlots)           fd.append("noOfPlots",           Number(form.noOfPlots));
-      if (form.landSize)            fd.append("landSize",            form.landSize);
-      if (form.landSizePostfix)     fd.append("landSizePostfix",     form.landSizePostfix);
+      // Details — backend field names
+      if (form.bedrooms)        fd.append("bedrooms",    Number(form.bedrooms));
+      if (form.bathrooms)       fd.append("bathrooms",   Number(form.bathrooms));
+      if (form.toilets)         fd.append("toilets",     Number(form.toilets));
+      if (form.propertySize)    fd.append("squareFeet",  form.propertySize);   // backend expects squareFeet
+      if (form.parking)         fd.append("parking",     Number(form.parking));
+      if (form.noOfPlots)       fd.append("noOfPlots",   Number(form.noOfPlots));
+      if (form.landSize)        fd.append("landSize",    form.landSize);
 
       if (form.features.length > 0) {
         form.features.forEach((f) => fd.append("features", f));

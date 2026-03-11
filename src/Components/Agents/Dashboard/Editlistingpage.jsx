@@ -69,16 +69,16 @@ const apiToForm = (p) => {
     price:         p.price        ? String(p.price) : "",
     agencyFee:     p.inspectionFee ? String(p.inspectionFee) : "",
     duration:      p.duration     || "monthly",
-    // Details
-    bedrooms:            p.bedrooms            ? String(p.bedrooms)   : "",
-    bathrooms:           p.bathrooms           ? String(p.bathrooms)  : "",
-    toilets:             p.toilets             ? String(p.toilets)    : "",
-    propertySize:        p.propertySize        ? String(p.propertySize) : "",
-    propertySizePostfix: p.propertySizePostfix || "Sqft",
-    parking:             p.parking             ? String(p.parking)   : "",
-    noOfPlots:           p.noOfPlots           ? String(p.noOfPlots) : "",
-    landSize:            p.landSize            ? String(p.landSize)  : "",
-    landSizePostfix:     p.landSizePostfix     || "Sqft",
+    // Details — backend stores as squareFeet, we map it to propertySize for the form
+    bedrooms:            p.bedrooms   ? String(p.bedrooms)  : "",
+    bathrooms:           p.bathrooms  ? String(p.bathrooms) : "",
+    toilets:             p.toilets    ? String(p.toilets)   : "",
+    propertySize:        p.squareFeet ? String(p.squareFeet) : "",  // squareFeet → propertySize
+    propertySizePostfix: "Sqft",
+    parking:             p.parking    ? String(p.parking)   : "",
+    noOfPlots:           p.noOfPlots  ? String(p.noOfPlots) : "",
+    landSize:            p.landSize   ? String(p.landSize)  : "",
+    landSizePostfix:     "Sqft",
     // Features
     features:      Array.isArray(p.features) ? p.features : [],
     otherFeatures: p.otherFeatures || "",
@@ -171,22 +171,20 @@ export default function EditListingPage() {
       if (form.currency)              fd.append("currency",      form.currency);
       if (form.otherFeatures?.trim()) fd.append("otherFeatures", form.otherFeatures.trim());
 
-      // Details fields
-      if (form.bedrooms)            fd.append("bedrooms",            Number(form.bedrooms));
-      if (form.bathrooms)           fd.append("bathrooms",           Number(form.bathrooms));
-      if (form.toilets)             fd.append("toilets",             Number(form.toilets));
-      if (form.propertySize)        fd.append("propertySize",        form.propertySize);
-      if (form.propertySizePostfix) fd.append("propertySizePostfix", form.propertySizePostfix);
-      if (form.parking)             fd.append("parking",             Number(form.parking));
-      if (form.noOfPlots)           fd.append("noOfPlots",           Number(form.noOfPlots));
-      if (form.landSize)            fd.append("landSize",            form.landSize);
-      if (form.landSizePostfix)     fd.append("landSizePostfix",     form.landSizePostfix);
+      // Details — use backend field names
+      if (form.bedrooms)     fd.append("bedrooms",   Number(form.bedrooms));
+      if (form.bathrooms)    fd.append("bathrooms",  Number(form.bathrooms));
+      if (form.toilets)      fd.append("toilets",    Number(form.toilets));
+      if (form.propertySize) fd.append("squareFeet", form.propertySize);  // backend expects squareFeet
+      if (form.parking)      fd.append("parking",    Number(form.parking));
+      if (form.noOfPlots)    fd.append("noOfPlots",  Number(form.noOfPlots));
+      if (form.landSize)     fd.append("landSize",   form.landSize);
 
       if (form.features.length > 0) {
         form.features.forEach((f) => fd.append("features", f));
       }
 
-      // Existing images
+      // Images
       form.images.filter(img => img.existing).forEach(img => fd.append("existingImages", img.url));
       form.images.filter(img => img.file).forEach(img => fd.append("images", img.file));
 
@@ -254,7 +252,6 @@ export default function EditListingPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pb-20 pt-[72px] sm:pt-8">
 
-        {/* Header */}
         <div className="flex items-center justify-between mb-6 sm:mb-7">
           <div>
             <button
