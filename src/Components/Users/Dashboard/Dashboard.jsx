@@ -10,7 +10,7 @@ const formatPrice = (price) =>
   "₦" + new Intl.NumberFormat("en-NG").format(price);
 
 const CITIES = ["All Cities", "Victoria Island", "Lekki", "Ikoyi", "Yaba", "Ajah", "Surulere", "Magodo", "Eko Atlantic"];
-const PROP_TYPES = ["All Types", "Duplex", "Flat", "Mansion", "Apartment", "Terrace", "Bungalow", "Penthouse"];
+const PROP_TYPES = ["All Types", "house", "apartment", "condo", "townhouse"];
 
 /* ─── SIDEBAR ────────────────────────────────────────────────────────────────── */
 const NAV_ITEMS = [
@@ -150,12 +150,12 @@ function PropertyCard({ property }) {
         />
         <div style={{ position: "absolute", top: 14, left: 14 }}>
           <span style={{
-            background: property.type === "rent" ? "#1a56db" : "#0b1a2e",
+            background: "#1a56db",
             color: "#fff", fontSize: 11, fontWeight: 700,
             padding: "4px 12px", borderRadius: 100,
             textTransform: "uppercase", letterSpacing: "0.5px",
           }}>
-            {property.type === "rent" ? "For Rent" : "For Sale"}
+            {property.propertyType}
           </span>
         </div>
       </div>
@@ -209,9 +209,12 @@ function PropertyCard({ property }) {
             <div style={{ fontSize: 16, fontWeight: 800, color: "#1a56db", fontFamily: "Poppins, sans-serif" }}>
               {formatPrice(property.price)}
             </div>
-            <div style={{ fontSize: 10.5, color: "#9ca3af" }}>
-              {property.type === "rent" ? "/ year" : "total"}
-            </div>
+            <div style={{ fontSize: 10.5, color: "#9ca3af" }}>listing price</div>
+            {property.inspectionFee > 0 && (
+              <div style={{ fontSize: 10.5, color: "#6b7280", marginTop: 2 }}>
+                Inspection: {formatPrice(property.inspectionFee)}
+              </div>
+            )}
           </div>
         </div>
 
@@ -266,20 +269,23 @@ export default function UserDashboard() {
         if (!Array.isArray(list)) throw new Error("Unexpected API response shape");
         // Map API fields → shape the card expects
         const mapped = list.map(p => ({
-          _id:          p._id || p.id,
-          title:        p.title,
-          location:     [p.area, p.city, p.state].filter(Boolean).join(", "),
-          city:         p.city,
-          propertyType: p.type,
-          price:        p.price,
-          type:         p.purpose === "sale" ? "sale" : "rent",
-          bedrooms:     p.bedrooms ?? 0,
-          bathrooms:    p.bathrooms ?? 0,
-          sqft:         p.propertySize ?? 0,
-          image:        p.images?.[0] || "https://placehold.co/600x400/e5e7eb/6b7280?text=Property",
+          _id:           p._id || p.id,
+          title:         p.title,
+          location:      [p.street, p.city, p.state].filter(Boolean).join(", "),
+          city:          p.city,
+          state:         p.state,
+          propertyType:  p.propertyType,
+          price:         p.price,
+          inspectionFee: p.inspectionFee,
+          bedrooms:      p.bedrooms ?? 0,
+          bathrooms:     p.bathrooms ?? 0,
+          sqft:          p.squareFeet ?? 0,
+          // images is [{url, public_id}] — extract the url string
+          image:         p.images?.[0]?.url || "https://placehold.co/600x400/e5e7eb/6b7280?text=Property",
           agent: {
-            name:   p.agent?.name   || p.agentName   || "Agent",
-            avatar: p.agent?.avatar || p.agentAvatar || "",
+            // backend populates agent with fullName
+            name:   p.agent?.fullName || p.agent?.name || "Agent",
+            avatar: p.agent?.avatar   || "",
           },
         }));
         setProperties(mapped);
@@ -294,14 +300,14 @@ export default function UserDashboard() {
   }, []);
 
   const filtered = properties.filter(p => {
-    const matchType   = filter === "all" || p.type === filter;
     const matchCity   = cityFilter === "All Cities" || p.city === cityFilter;
-    const matchPType  = typeFilter === "All Types" || p.propertyType === typeFilter;
+    const matchState  = cityFilter === "All Cities" || p.state === cityFilter;
+    const matchPType  = typeFilter === "All Types"  || p.propertyType === typeFilter.toLowerCase();
     const matchSearch =
       p.title.toLowerCase().includes(search.toLowerCase()) ||
       p.location.toLowerCase().includes(search.toLowerCase()) ||
       p.agent.name.toLowerCase().includes(search.toLowerCase());
-    return matchType && matchCity && matchPType && matchSearch;
+    return (matchCity || matchState) && matchPType && matchSearch;
   });
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));

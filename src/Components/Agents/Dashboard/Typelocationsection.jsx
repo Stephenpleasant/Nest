@@ -1,12 +1,9 @@
 // src/components/TypeLocationSection.jsx
 
-// ── Static option lists ──────────────────────────────────────────────────────
 const TYPES    = ["Apartment","House","Land","Office","Commercial"].map(v => ({ value: v.toLowerCase(), label: v }));
 const PURPOSES = ["Sale","Rent","Short Let"].map(v => ({ value: v.toLowerCase().replace(" ","_"), label: v }));
 const LABELS   = ["Featured","Hot","New"].map(v => ({ value: v.toLowerCase(), label: v }));
 
-// ── Nigeria location data ────────────────────────────────────────────────────
-// Structure: { stateName: { cityName: [areas...] } }
 const LOCATIONS = {
   "Abia":        { "Umuahia": ["Umuahia North","Umuahia South","Ikwuano"], "Aba": ["Aba North","Aba South","Osisioma"], "Ohafia": ["Ohafia","Arochukwu"], "Bende": ["Bende","Isuikwuato"] },
   "Adamawa":     { "Yola": ["Yola North","Yola South","Girei"], "Mubi": ["Mubi North","Mubi South","Maiha"], "Numan": ["Numan","Demsa","Lamurde"], "Ganye": ["Ganye","Toungo","Jada"] },
@@ -47,12 +44,8 @@ const LOCATIONS = {
   "Zamfara":     { "Gusau": ["Gusau","Bungudu","Maru"], "Kaura Namoda": ["Kaura Namoda","Zurmi","Birnin Magaji"], "Talata Mafara": ["Talata Mafara","Bakura","Maradun"], "Anka": ["Anka","Bukkuyum","Tsafe"] },
 };
 
-// Derive sorted state list from the map
-const STATE_OPTIONS = Object.keys(LOCATIONS)
-  .sort()
-  .map(s => ({ value: s, label: s }));
+const STATE_OPTIONS = Object.keys(LOCATIONS).sort().map(s => ({ value: s, label: s }));
 
-// ── Reusable select field ─────────────────────────────────────────────────────
 const SelectField = ({ label, name, value, onChange, options, disabled, placeholder = "Select" }) => (
   <div className="flex flex-col gap-1.5">
     <label className="text-sm font-medium text-gray-700">{label}</label>
@@ -78,15 +71,11 @@ const SelectField = ({ label, name, value, onChange, options, disabled, placehol
   </div>
 );
 
-// ── Main component ────────────────────────────────────────────────────────────
 export default function TypeLocationSection({ data, onChange }) {
-
-  // Derive city options from selected state
   const cityOptions = data.state
     ? Object.keys(LOCATIONS[data.state] ?? {}).sort().map(c => ({ value: c, label: c }))
     : [];
 
-  // Derive area options from selected state + city
   const areaOptions = data.state && data.city
     ? (LOCATIONS[data.state]?.[data.city] ?? []).sort().map(a => ({ value: a, label: a }))
     : [];
@@ -103,17 +92,17 @@ export default function TypeLocationSection({ data, onChange }) {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 mb-5">
+    <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 mb-5">
 
-      {/* Row 1 — Type / Purpose / Label */}
-      <div className="grid grid-cols-3 gap-4 mb-4">
+      {/* Row 1 — Type / Purpose / Label: 1 col on mobile, 3 on sm+ */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
         <SelectField label="Type"    name="type"    value={data.type}    onChange={onChange} options={TYPES} />
         <SelectField label="Purpose" name="purpose" value={data.purpose} onChange={onChange} options={PURPOSES} />
         <SelectField label="Label"   name="label"   value={data.label}   onChange={onChange} options={LABELS} />
       </div>
 
-      {/* Row 2 — State / City / Area */}
-      <div className="grid grid-cols-3 gap-4 mb-4">
+      {/* Row 2 — State / City / Area: 1 col on mobile, 3 on sm+ */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
         <SelectField
           label="State"
           name="state"
@@ -142,9 +131,9 @@ export default function TypeLocationSection({ data, onChange }) {
         />
       </div>
 
-      {/* Address + ZipCode */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="col-span-2 flex flex-col gap-1.5">
+      {/* Address + ZipCode: stack on mobile, side by side on sm+ */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+        <div className="sm:col-span-2 flex flex-col gap-1.5">
           <label className="text-sm font-medium text-gray-700">Address</label>
           <input
             type="text"

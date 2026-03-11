@@ -1,5 +1,5 @@
 // src/components/Sidebar.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const BLUE    = "#1a56db";
 const NAVY    = "#0b1a2e";
@@ -50,6 +50,19 @@ const IconHome = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
     <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
     <polyline points="9 22 9 12 15 12 15 22" fill="none" stroke="white" strokeWidth="1.9" strokeLinecap="round"/>
+  </svg>
+);
+const IconMenu = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <line x1="3" y1="6" x2="21" y2="6"/>
+    <line x1="3" y1="12" x2="21" y2="12"/>
+    <line x1="3" y1="18" x2="21" y2="18"/>
+  </svg>
+);
+const IconClose = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <line x1="18" y1="6" x2="6" y2="18"/>
+    <line x1="6" y1="6" x2="18" y2="18"/>
   </svg>
 );
 
@@ -107,6 +120,25 @@ const NavLink = ({ icon, label, active, onClick, danger }) => {
 
 /* ── Sidebar ── */
 export default function Sidebar({ activePage, onNavigate }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth < 768 : false
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const handler = (e) => setIsMobile(e.matches);
+    setIsMobile(mq.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  // Close drawer on route change (mobile)
+  const handleNavigate = (id) => {
+    onNavigate(id);
+    if (isMobile) setIsOpen(false);
+  };
+
   const mainLinks = [
     { id: "Dashboard",        icon: <IconDashboard /> },
     { id: "Bookings",         icon: <IconBookings />  },
@@ -114,24 +146,27 @@ export default function Sidebar({ activePage, onNavigate }) {
     { id: "Wallet",           icon: <IconWallet />    },
   ];
 
-  return (
+  const sidebarContent = (
     <nav style={{
-      width: NAV_W, minHeight: "100vh",
-      background: WHITE, borderRight: `1.5px solid ${BORDER}`,
+      width: NAV_W, height: "100%",
+      background: WHITE,
+      borderRight: isMobile ? "none" : `1.5px solid ${BORDER}`,
       display: "flex", flexDirection: "column",
       padding: "24px 14px",
-      position: "fixed", top: 0, left: 0, zIndex: 100,
       gap: 2,
-      boxShadow: "4px 0 24px rgba(26,86,219,0.06)",
+      boxShadow: isMobile
+        ? "4px 0 32px rgba(26,86,219,0.12)"
+        : "4px 0 24px rgba(26,86,219,0.06)",
+      position: "relative",
+      overflowY: "auto",
     }}>
-
       {/* Top gradient stripe */}
       <div style={{
         position: "absolute", top: 0, left: 0, right: 0, height: 4,
         background: "linear-gradient(90deg,#1a56db 0%,#60a5fa 40%,#3b82f6 70%,#1a56db 100%)",
       }}/>
 
-      {/* Logo */}
+      {/* Logo row — close button on mobile */}
       <div style={{
         display: "flex", alignItems: "center", gap: 10,
         padding: "6px 8px 24px",
@@ -149,9 +184,23 @@ export default function Sidebar({ activePage, onNavigate }) {
           fontFamily: "'Poppins', sans-serif",
           fontWeight: 800, fontSize: 19,
           color: NAVY, letterSpacing: "-0.3px",
+          flex: 1,
         }}>
           Nest<span style={{ color: BLUE }}>find</span>
         </span>
+        {isMobile && (
+          <button
+            onClick={() => setIsOpen(false)}
+            style={{
+              background: "none", border: "none", cursor: "pointer",
+              color: GREY, padding: 4, display: "grid", placeItems: "center",
+              borderRadius: 6,
+            }}
+            aria-label="Close menu"
+          >
+            <IconClose />
+          </button>
+        )}
       </div>
 
       {/* Main nav */}
@@ -166,7 +215,7 @@ export default function Sidebar({ activePage, onNavigate }) {
           <NavLink
             key={id} icon={icon} label={id}
             active={activePage === id}
-            onClick={() => onNavigate(id)}
+            onClick={() => handleNavigate(id)}
           />
         ))}
 
@@ -181,7 +230,7 @@ export default function Sidebar({ activePage, onNavigate }) {
         <NavLink
           icon={<IconProfile />} label="My Profile"
           active={activePage === "My Profile"}
-          onClick={() => onNavigate("My Profile")}
+          onClick={() => handleNavigate("My Profile")}
         />
         <NavLink icon={<IconLogout />} label="Logout" danger onClick={() => alert("Logging out…")} />
       </div>
@@ -207,5 +256,94 @@ export default function Sidebar({ activePage, onNavigate }) {
         </div>
       </div>
     </nav>
+  );
+
+  /* ── Desktop: fixed sidebar ── */
+  if (!isMobile) {
+    return (
+      <div style={{
+        position: "fixed", top: 0, left: 0,
+        width: NAV_W, minHeight: "100vh", zIndex: 100,
+      }}>
+        {sidebarContent}
+      </div>
+    );
+  }
+
+  /* ── Mobile: top bar + slide-in drawer ── */
+  return (
+    <>
+      {/* Mobile top bar */}
+      <header style={{
+        position: "fixed", top: 0, left: 0, right: 0, height: 56,
+        background: WHITE, borderBottom: `1.5px solid ${BORDER}`,
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "0 16px", zIndex: 200,
+        boxShadow: "0 2px 12px rgba(26,86,219,0.07)",
+      }}>
+        {/* Top gradient stripe */}
+        <div style={{
+          position: "absolute", top: 0, left: 0, right: 0, height: 3,
+          background: "linear-gradient(90deg,#1a56db 0%,#60a5fa 40%,#3b82f6 70%,#1a56db 100%)",
+        }}/>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{
+            width: 32, height: 32, background: BLUE, borderRadius: 8,
+            display: "grid", placeItems: "center",
+            boxShadow: "0 3px 10px rgba(26,86,219,0.30)",
+          }}>
+            <IconHome />
+          </div>
+          <span style={{
+            fontFamily: "'Poppins', sans-serif",
+            fontWeight: 800, fontSize: 17,
+            color: NAVY, letterSpacing: "-0.3px",
+          }}>
+            Nest<span style={{ color: BLUE }}>find</span>
+          </span>
+        </div>
+
+        <button
+          onClick={() => setIsOpen(true)}
+          style={{
+            background: "none", border: "none", cursor: "pointer",
+            color: NAVY, padding: 6, display: "grid", placeItems: "center",
+            borderRadius: 8,
+          }}
+          aria-label="Open menu"
+        >
+          <IconMenu />
+        </button>
+      </header>
+
+      {/* Backdrop */}
+      {isOpen && (
+        <div
+          onClick={() => setIsOpen(false)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 300,
+            background: "rgba(11,26,46,0.45)",
+            backdropFilter: "blur(2px)",
+            animation: "fadeIn 0.2s ease",
+          }}
+        />
+      )}
+
+      {/* Drawer */}
+      <div style={{
+        position: "fixed", top: 0, left: 0,
+        width: NAV_W, height: "100dvh",
+        zIndex: 400,
+        transform: isOpen ? "translateX(0)" : "translateX(-100%)",
+        transition: "transform 0.28s cubic-bezier(0.4,0,0.2,1)",
+      }}>
+        {sidebarContent}
+      </div>
+
+      <style>{`
+        @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+      `}</style>
+    </>
   );
 }

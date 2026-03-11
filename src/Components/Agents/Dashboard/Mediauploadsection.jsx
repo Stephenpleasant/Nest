@@ -34,7 +34,7 @@ const TrashIcon = () => (
 export default function MediaUploadSection({ data, onChange }) {
   const imageInputRef = useRef(null);
   const videoInputRef = useRef(null);
-  const [dragOver, setDragOver] = useState(null); // 'image' | 'video' | null
+  const [dragOver, setDragOver] = useState(null);
 
   const images = data.images || [];
   const videos = data.videos || [];
@@ -57,11 +57,7 @@ export default function MediaUploadSection({ data, onChange }) {
     onChange("videos", [preview]);
   };
 
-  const removeImage = (idx) => {
-    const updated = images.filter((_, i) => i !== idx);
-    onChange("images", updated);
-  };
-
+  const removeImage = (idx) => onChange("images", images.filter((_, i) => i !== idx));
   const removeVideo = () => onChange("videos", []);
 
   const handleDrop = (e, type) => {
@@ -72,13 +68,17 @@ export default function MediaUploadSection({ data, onChange }) {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 mb-5">
+    <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 mb-5">
       <h2 className="text-base font-semibold text-gray-900 mb-1 pb-3 border-b border-gray-100">
         Media
       </h2>
-      <p className="text-xs text-gray-400 mt-3 mb-5">Upload up to {MAX_IMAGES} images and {MAX_VIDEOS} video for your listing.</p>
+      <p className="text-xs text-gray-400 mt-3 mb-5">
+        Upload up to {MAX_IMAGES} images and {MAX_VIDEOS} video for your listing.
+      </p>
 
-      <div className="grid grid-cols-2 gap-4">
+      {/* Stack on mobile, side-by-side on sm+ */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+
         {/* ── Images Upload ── */}
         <div>
           <div className="flex items-center justify-between mb-2">
@@ -88,21 +88,21 @@ export default function MediaUploadSection({ data, onChange }) {
             <span className="text-xs text-gray-400">{images.length}/{MAX_IMAGES}</span>
           </div>
 
-          {/* Drop zone */}
           {images.length < MAX_IMAGES && (
             <div
               onClick={() => imageInputRef.current?.click()}
               onDragOver={(e) => { e.preventDefault(); setDragOver("image"); }}
               onDragLeave={() => setDragOver(null)}
               onDrop={(e) => handleDrop(e, "image")}
-              className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-xl p-6 cursor-pointer transition
+              className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-xl p-5 sm:p-6 cursor-pointer transition
                 ${dragOver === "image" ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-blue-400 hover:bg-blue-50/40"}`}
             >
               <div className={`text-gray-400 transition ${dragOver === "image" ? "text-blue-500 scale-110" : ""}`}>
                 <UploadIcon />
               </div>
               <p className="text-xs text-gray-500 text-center">
-                <span className="font-semibold text-blue-600">Click to upload</span> or drag & drop
+                <span className="font-semibold text-blue-600">Tap to upload</span>
+                <span className="hidden sm:inline"> or drag & drop</span>
               </p>
               <p className="text-[11px] text-gray-400">PNG, JPG, WEBP</p>
               <input
@@ -116,7 +116,6 @@ export default function MediaUploadSection({ data, onChange }) {
             </div>
           )}
 
-          {/* Image previews */}
           {images.length > 0 && (
             <div className="flex gap-2 mt-3 flex-wrap">
               {images.map((img, idx) => (
@@ -131,6 +130,14 @@ export default function MediaUploadSection({ data, onChange }) {
                       <TrashIcon />
                     </button>
                   </div>
+                  {/* Always-visible delete for touch (mobile) */}
+                  <button
+                    type="button"
+                    onClick={() => removeImage(idx)}
+                    className="absolute top-1 right-1 sm:hidden bg-red-500 text-white rounded-full p-1 shadow"
+                  >
+                    <TrashIcon />
+                  </button>
                   {idx === 0 && (
                     <span className="absolute top-1.5 left-1.5 bg-blue-600 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded">Cover</span>
                   )}
@@ -155,14 +162,15 @@ export default function MediaUploadSection({ data, onChange }) {
               onDragOver={(e) => { e.preventDefault(); setDragOver("video"); }}
               onDragLeave={() => setDragOver(null)}
               onDrop={(e) => handleDrop(e, "video")}
-              className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-xl p-6 cursor-pointer transition
+              className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-xl p-5 sm:p-6 cursor-pointer transition
                 ${dragOver === "video" ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-blue-400 hover:bg-blue-50/40"}`}
             >
               <div className={`text-gray-400 transition ${dragOver === "video" ? "text-blue-500 scale-110" : ""}`}>
                 <UploadIcon />
               </div>
               <p className="text-xs text-gray-500 text-center">
-                <span className="font-semibold text-blue-600">Click to upload</span> or drag & drop
+                <span className="font-semibold text-blue-600">Tap to upload</span>
+                <span className="hidden sm:inline"> or drag & drop</span>
               </p>
               <p className="text-[11px] text-gray-400">MP4, MOV, AVI</p>
               <input
@@ -175,15 +183,23 @@ export default function MediaUploadSection({ data, onChange }) {
             </div>
           )}
 
-          {/* Video preview */}
           {videos.length > 0 && (
             <div className="mt-3">
               <div className="relative group rounded-xl overflow-hidden border border-gray-200 bg-gray-50 aspect-video">
                 <video src={videos[0].url} className="w-full h-full object-cover" controls />
+                {/* Desktop hover delete */}
                 <button
                   type="button"
                   onClick={removeVideo}
-                  className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1.5 shadow opacity-0 group-hover:opacity-100 transition"
+                  className="absolute top-2 right-2 hidden sm:block bg-red-500 text-white rounded-full p-1.5 shadow opacity-0 group-hover:opacity-100 transition"
+                >
+                  <TrashIcon />
+                </button>
+                {/* Mobile always-visible delete */}
+                <button
+                  type="button"
+                  onClick={removeVideo}
+                  className="absolute top-2 right-2 sm:hidden bg-red-500 text-white rounded-full p-1.5 shadow"
                 >
                   <TrashIcon />
                 </button>

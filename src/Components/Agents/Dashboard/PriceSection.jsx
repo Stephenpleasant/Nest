@@ -16,14 +16,15 @@ const DURATIONS = [
 
 export default function PriceSection({ data, onChange }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 mb-5">
-      <h2 className="text-base font-semibold text-gray-900 mb-5 pb-3 border-b border-gray-100">
+    <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 mb-5">
+      <h2 className="text-base font-semibold text-gray-900 mb-4 sm:mb-5 pb-3 border-b border-gray-100">
         Price
       </h2>
 
-      <div className="flex gap-3 items-end">
+      {/* Row 1: Currency + Price */}
+      <div className="flex gap-3 items-end mb-3">
         {/* Currency */}
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-1.5 flex-shrink-0">
           <label className="text-sm font-medium text-gray-700">Currency</label>
           <div className="relative w-16">
             <select
@@ -50,9 +51,12 @@ export default function PriceSection({ data, onChange }) {
             className="w-full h-10 px-3 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition"
           />
         </div>
+      </div>
 
-        {/* Agency Fee (Required) */}
-        <div className="flex flex-col gap-1.5 flex-1">
+      {/* Row 2: Agency Fee + Duration */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {/* Agency Fee */}
+        <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium text-gray-700">
             Agency Fee <span className="text-red-500">*</span>
           </label>
@@ -67,7 +71,7 @@ export default function PriceSection({ data, onChange }) {
         </div>
 
         {/* Duration */}
-        <div className="flex flex-col gap-1.5 flex-1">
+        <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium text-gray-700">Duration</label>
           <div className="relative">
             <select

@@ -9,6 +9,7 @@ import ProfilePage from './Components/Users/Profile/profile'
 import WalletPage from './Components/Agents/Wallet/Wallet'
 import AdashBoard from './Components/Agents/Dashboard/Dashboard'
 import CreateListingPage from './Components/Agents/Dashboard/Createlistingpage'
+import EditListingPage from './Components/Agents/Dashboard/Editlistingpage'
 import Sidebar from './Components/Agents/navbar'
 import AgentOrdersPage from './Components/Agents/Bookings/AgentOrders'
 
@@ -82,7 +83,6 @@ function AgentLayout({ children }) {
 function App() {
   const [, setToken] = useState(localStorage.getItem('token'))
 
-  // Re-render when token changes (e.g. after login in another tab)
   useEffect(() => {
     const sync = () => setToken(localStorage.getItem('token'))
     window.addEventListener('storage', sync)
@@ -93,33 +93,18 @@ function App() {
     <BrowserRouter>
       <Routes>
 
-        {/* ── Landing page — redirect to dashboard if already logged in ── */}
+        {/* ── Landing page ── */}
         <Route
           path="/"
           element={isAuthenticated() ? <Navigate to={getRedirectPath()} replace /> : <LandingPage />}
         />
 
         {/* ── User routes ── */}
-        <Route
-          path="/dashboard"
-          element={<ProtectedRoute><UserDashboard /></ProtectedRoute>}
-        />
-        <Route
-          path="/userdashboard"
-          element={<ProtectedRoute><UserDashboard /></ProtectedRoute>}
-        />
-        <Route
-          path="/bookings"
-          element={<ProtectedRoute><MyBookings /></ProtectedRoute>}
-        />
-        <Route
-          path="/profile"
-          element={<ProtectedRoute><ProfilePage /></ProtectedRoute>}
-        />
-        <Route
-          path="/properties/:id"
-          element={<PropertyDetail />}
-        />
+        <Route path="/dashboard"     element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
+        <Route path="/userdashboard" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
+        <Route path="/bookings"      element={<ProtectedRoute><MyBookings /></ProtectedRoute>} />
+        <Route path="/profile"       element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+        <Route path="/properties/:id" element={<PropertyDetail />} />
 
         {/* ── Agent routes ── */}
         <Route
@@ -137,6 +122,12 @@ function App() {
         <Route
           path="/create-listing"
           element={<ProtectedRoute agentOnly><AgentLayout><CreateListingPage /></AgentLayout></ProtectedRoute>}
+        />
+
+        {/* ── Edit listing route ── */}
+        <Route
+          path="/edit/:id"
+          element={<ProtectedRoute agentOnly><AgentLayout><EditListingPage /></AgentLayout></ProtectedRoute>}
         />
 
         {/* ── Fallback ── */}
