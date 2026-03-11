@@ -197,7 +197,7 @@ function PropertyCard({ property }) {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <img
-              src={property.agent.avatar}
+              src={property.agent.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(property.agent.name)}&size=30&background=1a56db&color=fff`}
               alt={property.agent.name}
               style={{ width: 30, height: 30, borderRadius: "50%", objectFit: "cover", border: "2px solid #e5e7eb" }}
               onError={e => { e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(property.agent.name)}&size=30&background=1a56db&color=fff`; }}
@@ -285,7 +285,7 @@ export default function UserDashboard() {
           agent: {
             // backend populates agent with fullName
             name:   p.agent?.fullName || p.agent?.name || "Agent",
-            avatar: p.agent?.avatar   || "",
+            avatar: p.agent?.avatar || null,
           },
         }));
         setProperties(mapped);
