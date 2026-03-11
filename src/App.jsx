@@ -71,9 +71,13 @@ function AgentLayout({ children }) {
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
       <Sidebar activePage={activePage} onNavigate={handleNavigate} />
-      <main style={{ marginLeft: NAV_W, flex: 1, minHeight: '100vh', background: '#f3f7ff' }}>
+      <main className="agent-main-content" style={{ minHeight: '100vh', background: '#f3f7ff' }}>
         {children}
       </main>
+      <style>{`
+        .agent-main-content { margin-left: 0; }
+        @media (min-width: 768px) { .agent-main-content { margin-left: ${NAV_W}px; } }
+      `}</style>
     </div>
   )
 }
@@ -90,7 +94,7 @@ function App() {
   }, [])
 
   return (
-    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <BrowserRouter>
       <Routes>
 
         {/* ── Landing page ── */}

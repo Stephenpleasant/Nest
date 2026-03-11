@@ -278,7 +278,7 @@ const ListingCard = ({ listing, onEdit, onDelete }) => {
 
 // ── Responsive CSS ─────────────────────────────────────────────────────────
 const RESPONSIVE_CSS = `
-  .dash-root { padding: 24px 16px; }
+  .dash-root { padding: 80px 16px 24px; }
   .dash-header { flex-direction: column; gap: 14px; align-items: flex-start !important; }
   .dash-stat-grid { flex-direction: column !important; }
   .dash-filters { flex-direction: column !important; }
@@ -288,17 +288,20 @@ const RESPONSIVE_CSS = `
   .dash-create-btn { width: 100%; justify-content: center; }
 
   @media (min-width: 480px) {
-    .dash-root { padding: 24px 20px; }
+    .dash-root { padding: 80px 20px 24px; }
     .dash-stat-grid { flex-direction: row !important; flex-wrap: wrap !important; }
     .dash-stat-grid > * { flex: 1 1 calc(50% - 9px) !important; }
   }
   @media (min-width: 640px) {
-    .dash-root { padding: 28px 28px; }
+    .dash-root { padding: 80px 28px 28px; }
     .dash-header { flex-direction: row !important; align-items: flex-start !important; }
     .dash-create-btn { width: auto; }
     .dash-filters { flex-direction: row !important; }
     .dash-status-pills { flex-wrap: wrap !important; }
     .dash-type-select { width: auto !important; }
+  }
+  @media (min-width: 768px) {
+    .dash-root { padding: 32px 28px; }
   }
   @media (min-width: 900px) {
     .dash-root { padding: 32px 36px; }
