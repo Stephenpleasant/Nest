@@ -2,16 +2,31 @@ import { useRef, useState } from "react";
 import { Play, Pause, Volume2, VolumeX } from "lucide-react";
 import { BLUE, WHITE } from "./Constant";
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://gtimeconnect.onrender.com";
+
+/* Resolve relative paths uploaded by agents to absolute URLs */
+const resolveVideoUrl = (url) => {
+  if (!url) return null;
+  // Handle cases where url may be an object e.g. { url: "..." } or { src: "..." }
+  const str = typeof url === "string" ? url : url?.url || url?.src || null;
+  if (!str || str === "null" || str === "undefined") return null;
+  if (str.startsWith("http://") || str.startsWith("https://")) return str;
+  return `${API_BASE}${str.startsWith("/") ? "" : "/"}${str}`;
+};
+
 const VideoPlayer = ({ videoUrl, fallbackImage, title }) => {
   const videoRef = useRef(null);
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(true);
   const [progress, setProgress] = useState(0);
+  const [error, setError] = useState(false);
+
+  const resolvedUrl = resolveVideoUrl(videoUrl);
 
   const toggle = () => {
     if (!videoRef.current) return;
     if (playing) { videoRef.current.pause(); setPlaying(false); }
-    else { videoRef.current.play(); setPlaying(true); }
+    else { videoRef.current.play().catch(() => setError(true)); setPlaying(true); }
   };
 
   const toggleMute = () => {
@@ -34,11 +49,20 @@ const VideoPlayer = ({ videoUrl, fallbackImage, title }) => {
 
   return (
     <div style={{ position: "relative", width: "100%", height: "100%", background: "#000", overflow: "hidden" }}>
-      {videoUrl ? (
+      {resolvedUrl && !error ? (
         <>
-          <video ref={videoRef} src={videoUrl} muted={muted} loop onTimeUpdate={onTimeUpdate}
+          <video
+            ref={videoRef}
+            src={resolvedUrl}
+            muted={muted}
+            loop
+            playsInline
+            preload="metadata"
+            onTimeUpdate={onTimeUpdate}
+            onEnded={() => setPlaying(false)}
+            onError={() => setError(true)}
             style={{ width: "100%", height: "100%", objectFit: "cover" }}
-            onEnded={() => setPlaying(false)} />
+          />
           <div style={{
             position: "absolute", inset: 0,
             background: playing ? "transparent" : "linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 50%)",

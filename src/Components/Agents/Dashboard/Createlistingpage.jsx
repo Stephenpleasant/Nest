@@ -17,11 +17,9 @@ const INITIAL_FORM = {
   type: "", purpose: "", label: "",
   state: "", city: "", area: "", address: "", zipCode: "",
   currency: "NGN", price: "", agencyFee: "", duration: "monthly",
-  // Details
   bedrooms: "", bathrooms: "", toilets: "",
   propertySize: "", propertySizePostfix: "Sqft", parking: "",
   noOfPlots: "", landSize: "", landSizePostfix: "Sqft",
-  // Features
   features: [], otherFeatures: "",
   images: [], videos: [],
 };
@@ -29,6 +27,7 @@ const INITIAL_FORM = {
 export default function CreateListingPage() {
   const [form, setForm] = useState(INITIAL_FORM);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [submitError, setSubmitError]   = useState("");
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
@@ -37,6 +36,7 @@ export default function CreateListingPage() {
 
   const handleSubmit = async () => {
     setSubmitError("");
+    setUploadProgress(0);
 
     if (!form.propertyTitle.trim()) return setSubmitError("Property title is required.");
     if (!form.type)                 return setSubmitError("Please select a property type.");
@@ -48,17 +48,27 @@ export default function CreateListingPage() {
 
     try {
       const token = localStorage.getItem("token");
-      const storedUser = localStorage.getItem("user");
-      const parsedUser = storedUser ? JSON.parse(storedUser) : null;
 
+      // ── Agent ID: try every known storage key and shape ────────────────
       let agentId = null;
-      try {
-        const a = parsedUser?.agent;
-        agentId = (a && (a._id || a.id)) || parsedUser?._id || parsedUser?.id || null;
-      } catch (_) {}
+      for (const key of ["user", "nestfind_user", "agent", "agentData"]) {
+        try {
+          const raw = localStorage.getItem(key);
+          if (!raw) continue;
+          const u = JSON.parse(raw);
+          agentId =
+            u?.agent?._id || u?.agent?.id ||
+            u?.agentId    ||
+            u?._id        || u?.id        || null;
+          if (agentId) break;
+        } catch (_) {}
+      }
 
       if (!agentId) {
-        setSubmitError("Could not find agent ID. Please log out and log in again.");
+        setSubmitError(
+          "Could not find your agent ID. Please log out and log in again.\n" +
+          "Keys checked: user, nestfind_user, agent, agentData"
+        );
         setIsSubmitting(false);
         return;
       }
@@ -83,52 +93,81 @@ export default function CreateListingPage() {
       if (form.currency)              fd.append("currency",      form.currency);
       if (form.otherFeatures?.trim()) fd.append("otherFeatures", form.otherFeatures.trim());
 
-      // Details — backend field names
-      if (form.bedrooms)        fd.append("bedrooms",    Number(form.bedrooms));
-      if (form.bathrooms)       fd.append("bathrooms",   Number(form.bathrooms));
-      if (form.toilets)         fd.append("toilets",     Number(form.toilets));
-      if (form.propertySize)    fd.append("squareFeet",  form.propertySize);   // backend expects squareFeet
-      if (form.parking)         fd.append("parking",     Number(form.parking));
-      if (form.noOfPlots)       fd.append("noOfPlots",   Number(form.noOfPlots));
-      if (form.landSize)        fd.append("landSize",    form.landSize);
+      if (form.bedrooms)     fd.append("bedrooms",   Number(form.bedrooms));
+      if (form.bathrooms)    fd.append("bathrooms",  Number(form.bathrooms));
+      if (form.toilets)      fd.append("toilets",    Number(form.toilets));
+      if (form.propertySize) fd.append("squareFeet", form.propertySize);
+      if (form.parking)      fd.append("parking",    Number(form.parking));
+      if (form.noOfPlots)    fd.append("noOfPlots",  Number(form.noOfPlots));
+      if (form.landSize)     fd.append("landSize",   form.landSize);
 
       if (form.features.length > 0) {
         form.features.forEach((f) => fd.append("features", f));
       }
 
-      form.images.forEach((img) => fd.append("images", img.file));
-      form.videos.forEach((vid) => fd.append("video",  vid.file));
+      form.images.filter(img => img.file).forEach((img) => fd.append("images", img.file));
+      form.videos.filter(vid => vid.file).forEach((vid) => fd.append("video",  vid.file));
 
       const { data } = await axios.post(
         `${API_BASE}/api/v1/properties/post`,
         fd,
-        { headers: { Authorization: `Bearer ${token}` } }
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          // No hard timeout — images/video uploads can take time on Render
+          timeout: 0,
+          onUploadProgress: (e) => {
+            if (e.total) {
+              setUploadProgress(Math.round((e.loaded / e.total) * 100));
+            }
+          },
+        }
       );
 
       console.log("Property created:", data);
+      setUploadProgress(100);
       setSubmitSuccess(true);
       setForm(INITIAL_FORM);
+
     } catch (err) {
-      console.error("Submit error:", err.response?.data);
-      const msg =
-        err.response?.data?.message ||
-        err.response?.data?.error   ||
-        (typeof err.response?.data === "object"
-          ? JSON.stringify(err.response.data, null, 2)
-          : null) ||
-        "Failed to create listing.";
-      setSubmitError(msg);
+      console.error("Submit error:", err.response?.data ?? err.message);
+
+      const responseData = err.response?.data;
+      let msg = "";
+      if (responseData) {
+        msg = typeof responseData === "string"
+          ? responseData
+          : responseData.message || responseData.error || JSON.stringify(responseData, null, 2);
+      } else {
+        msg = err.message || "Network error — no response from server.";
+      }
+
+      setSubmitError(`Error (${err.response?.status ?? "network"}):\n${msg}`);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pb-20 pt-[72px] sm:pt-8">
+  const hasFiles = form.images.some(i => i.file) || form.videos.some(v => v.file);
 
-        {/* Page Header */}
-        <div className="flex items-center justify-between mb-6 sm:mb-7">
+  return (
+    <>
+    <style>{`
+      .cl-layout { margin-left: 0; min-height: 100vh; background: #f9fafb; }
+      .cl-inner  { max-width: 768px; margin: 0 auto; padding: 72px 16px 80px; }
+      @media (min-width: 480px) { .cl-inner { padding: 72px 24px 80px; } }
+      @media (min-width: 640px) { .cl-inner { padding: 72px 32px 80px; } }
+      @media (min-width: 768px) {
+        .cl-layout { margin-left: 260px; }
+        .cl-inner  { padding: 40px 32px 80px; }
+      }
+      @media (min-width: 1024px) { .cl-inner { padding: 44px 40px 80px; } }
+      .cl-header { flex-direction: column; gap: 12px; align-items: flex-start !important; }
+      @media (min-width: 480px) { .cl-header { flex-direction: row !important; align-items: center !important; } }
+    `}</style>
+    <div className="nf-page-root cl-layout">
+      <div className="cl-inner">
+
+        <div className="cl-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
           <h1 className="text-lg sm:text-xl font-bold text-gray-900">Create a Listing</h1>
           <button
             type="button"
@@ -146,8 +185,35 @@ export default function CreateListingPage() {
         )}
 
         {submitError && (
-          <div className="mb-5 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm whitespace-pre-wrap">
+          <div className="mb-5 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm whitespace-pre-wrap font-mono">
             ⚠ {submitError}
+          </div>
+        )}
+
+        {/* Upload progress bar — shown while submitting with files */}
+        {isSubmitting && (
+          <div className="mb-5 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-blue-700">
+                {uploadProgress < 100
+                  ? hasFiles
+                    ? `Uploading files… ${uploadProgress}%`
+                    : "Submitting listing…"
+                  : "Saving to database…"}
+              </span>
+              <span className="text-xs text-blue-500">{uploadProgress}%</span>
+            </div>
+            <div className="w-full bg-blue-100 rounded-full h-2">
+              <div
+                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${uploadProgress || (isSubmitting ? 5 : 0)}%` }}
+              />
+            </div>
+            <p className="text-xs text-blue-400 mt-2">
+              {hasFiles
+                ? "Uploading images/video to server — this may take up to a minute. Please do not close this page."
+                : "Please wait…"}
+            </p>
           </div>
         )}
 
@@ -165,5 +231,6 @@ export default function CreateListingPage() {
         />
       </div>
     </div>
+    </>
   );
 }

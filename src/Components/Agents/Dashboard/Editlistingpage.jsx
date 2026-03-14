@@ -196,23 +196,41 @@ export default function EditListingPage() {
         fd.append("existingVideo", form.videos[0].url);
       }
 
+      // 30-second timeout so the spinner never hangs forever
+      const controller = new AbortController();
+      const timeoutId  = setTimeout(() => controller.abort(), 30000);
+
       await axios.put(
         `${API_BASE}/api/v1/properties/edit/${id}`,
         fd,
-        { headers: { Authorization: `Bearer ${token}` } }
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          signal: controller.signal,
+        }
       );
+      clearTimeout(timeoutId);
 
       setSubmitSuccess(true);
       setTimeout(() => navigate("/agent-dashboard"), 1500);
     } catch (err) {
-      console.error("Update error:", err.response?.data);
+      if (err?.name === "CanceledError" || err?.code === "ERR_CANCELED" || err?.name === "AbortError") {
+        setSubmitError(
+          "Request timed out after 30 seconds.\n" +
+          "The server may be waking up (Render free tier sleeps when idle). " +
+          "Please wait a moment and try again."
+        );
+        setIsSubmitting(false);
+        return;
+      }
+      console.error("Update error:", err.response?.data ?? err.message);
       const msg =
         err.response?.data?.message ||
         err.response?.data?.error   ||
         (typeof err.response?.data === "object"
           ? JSON.stringify(err.response.data, null, 2)
           : null) ||
-        "Failed to update listing.";
+        err.message ||
+        "Failed to update listing. Please try again.";
       setSubmitError(msg);
     } finally {
       setIsSubmitting(false);
@@ -221,7 +239,7 @@ export default function EditListingPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="nf-page-root min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
           <p className="text-sm text-gray-500">Loading property...</p>
@@ -232,7 +250,7 @@ export default function EditListingPage() {
 
   if (fetchError) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="nf-page-root min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-xl border border-red-200 p-6 max-w-md w-full text-center">
           <div className="text-4xl mb-3">⚠️</div>
           <h2 className="text-base font-bold text-gray-900 mb-2">Could not load property</h2>
@@ -249,10 +267,22 @@ export default function EditListingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pb-20 pt-[72px] sm:pt-8">
+    <>
+    <style>{`
+      .nf-page-root.el-layout { margin-left: 0; min-height: 100vh; background: #f9fafb; }
+      .el-inner  { max-width: 768px; margin: 0 auto; padding: 72px 16px 80px; }
+      @media (min-width: 480px) { .el-inner { padding: 72px 24px 80px; } }
+      @media (min-width: 640px) { .el-inner { padding: 72px 32px 80px; } }
+      @media (min-width: 768px) {
+        .nf-page-root.el-layout { margin-left: 260px; }
+        .el-inner  { padding: 40px 32px 80px; }
+      }
+      @media (min-width: 1024px) { .el-inner { padding: 44px 40px 80px; } }
+    `}</style>
+    <div className="nf-page-root el-layout">
+      <div className="el-inner">
 
-        <div className="flex items-center justify-between mb-6 sm:mb-7">
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
           <div>
             <button
               onClick={() => navigate("/agent-dashboard")}
@@ -283,7 +313,7 @@ export default function EditListingPage() {
         <FeaturesSection     data={form} onChange={handleChange} />
         <MediaUploadSection  data={form} onChange={handleChange} />
 
-        <div className="flex items-center justify-between mt-6">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 24, flexWrap: "wrap", gap: 10 }}>
           <button
             type="button"
             onClick={() => navigate("/agent-dashboard")}
@@ -308,5 +338,6 @@ export default function EditListingPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

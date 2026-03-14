@@ -277,35 +277,44 @@ const ListingCard = ({ listing, onEdit, onDelete }) => {
 
 // ── Responsive CSS ─────────────────────────────────────────────────────────
 const RESPONSIVE_CSS = `
-  .dash-root { padding: 80px 16px 24px; }
-  .dash-header { flex-direction: column; gap: 14px; align-items: flex-start !important; }
+  /* Mobile: full width, offset for fixed topbar (56px) */
+  .dash-layout { margin-left: 0 !important; }
+  .dash-root   { padding: 72px 16px 32px; min-height: 100vh; }
+  .dash-header { flex-direction: column !important; gap: 14px; align-items: flex-start !important; }
   .dash-stat-grid { flex-direction: column !important; }
-  .dash-filters { flex-direction: column !important; }
-  .dash-status-pills { overflow-x: auto; padding-bottom: 2px; flex-wrap: nowrap !important; }
+  .dash-filters { flex-direction: column !important; gap: 10px !important; }
+  .dash-status-pills { overflow-x: auto; padding-bottom: 2px; flex-wrap: nowrap !important; -webkit-overflow-scrolling: touch; }
   .dash-status-pills::-webkit-scrollbar { display: none; }
   .dash-type-select { width: 100% !important; }
-  .dash-create-btn { width: 100%; justify-content: center; }
+  .dash-create-btn { width: 100% !important; justify-content: center !important; }
 
   @media (min-width: 480px) {
-    .dash-root { padding: 80px 20px 24px; }
+    .dash-root { padding: 72px 20px 32px; }
     .dash-stat-grid { flex-direction: row !important; flex-wrap: wrap !important; }
     .dash-stat-grid > * { flex: 1 1 calc(50% - 9px) !important; }
   }
   @media (min-width: 640px) {
-    .dash-root { padding: 80px 28px 28px; }
+    .dash-root { padding: 72px 28px 32px; }
     .dash-header { flex-direction: row !important; align-items: flex-start !important; }
-    .dash-create-btn { width: auto; }
-    .dash-filters { flex-direction: row !important; }
+    .dash-create-btn { width: auto !important; }
+    .dash-filters { flex-direction: row !important; flex-wrap: wrap !important; }
     .dash-status-pills { flex-wrap: wrap !important; }
     .dash-type-select { width: auto !important; }
   }
+  /* Desktop: sidebar is 260px wide, main shifts right */
   @media (min-width: 768px) {
-    .dash-root { padding: 32px 28px; }
+    .dash-layout { margin-left: 260px !important; }
+    .dash-root   { padding: 32px 28px 32px; }
   }
   @media (min-width: 900px) {
-    .dash-root { padding: 32px 36px; }
+    .dash-root { padding: 32px 36px 32px; }
     .dash-stat-grid { flex-wrap: nowrap !important; }
     .dash-stat-grid > * { flex: 1 !important; }
+  }
+
+  @keyframes shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
   }
 `;
 
@@ -428,7 +437,8 @@ export default function AdashBoard({ onNavigate }) {
         />
       )}
 
-      <div className="dash-root" style={{ minHeight: "100vh", background: "#f3f7ff" }}>
+      <div className="nf-page-root dash-layout" style={{ minHeight: "100vh", background: "#f3f7ff" }}>
+      <div className="dash-root">
 
         {/* ── Header ── */}
         <div className="dash-header" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 28 }}>
@@ -613,12 +623,7 @@ export default function AdashBoard({ onNavigate }) {
         </div>
       </div>
 
-      <style>{`
-        @keyframes shimmer {
-          0%   { background-position: 200% 0; }
-          100% { background-position: -200% 0; }
-        }
-      `}</style>
+    </div>
     </>
   );
 }

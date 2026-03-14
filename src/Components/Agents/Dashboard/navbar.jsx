@@ -261,6 +261,14 @@ export default function Sidebar({ activePage, onNavigate }) {
           .nf-mobile-topbar   { display: flex !important; }
           .nf-drawer-close    { display: grid !important; }
         }
+
+        /* Utility: pages that sit beside this sidebar */
+        .nf-page-root { margin-left: 0; }
+        @media (min-width: 768px) { .nf-page-root { margin-left: 260px; } }
+
+        /* Prevent horizontal overflow on mobile */
+        *, *::before, *::after { box-sizing: border-box; }
+        body { overflow-x: hidden; }
       `}</style>
 
       {/* ── Desktop fixed sidebar ── */}
