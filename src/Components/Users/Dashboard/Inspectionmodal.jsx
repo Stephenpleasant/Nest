@@ -176,14 +176,27 @@ const InspectionModal = ({ property, onClose }) => {
             <div>
               {/* Property mini card */}
               <div className="insp-prop-card" style={{ display: "flex", gap: 12, padding: "12px 14px", background: "#f8fafc", borderRadius: 12, marginBottom: 20, border: "1px solid #f3f4f6" }}>
-                <img src={property.image} alt="" style={{ width: 56, height: 56, borderRadius: 9, objectFit: "cover", flexShrink: 0 }} />
+                {/* Image — handles string, object {url}, or array */}
+                {(() => {
+                  const raw = property.images?.[0] || property.image;
+                  const src = typeof raw === "string" ? raw : raw?.url || raw?.src || null;
+                  return src
+                    ? <img src={src} alt="" style={{ width: 64, height: 64, borderRadius: 9, objectFit: "cover", flexShrink: 0, border: "1px solid #e5e7eb" }} onError={e => { e.target.style.display = "none"; }} />
+                    : <div style={{ width: 64, height: 64, borderRadius: 9, background: "#e5e7eb", flexShrink: 0, display: "grid", placeItems: "center", fontSize: 22 }}>🏠</div>;
+                })()}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ fontWeight: 700, fontSize: 14, color: NAVY, margin: "0 0 3px", fontFamily: "Poppins, sans-serif", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{property.title}</p>
                   <p style={{ fontSize: 12, color: "#6b7280", margin: 0 }}>{property.address}</p>
                 </div>
                 <div style={{ textAlign: "right", flexShrink: 0 }}>
-                  <p style={{ fontWeight: 800, fontSize: 13, color: BLUE, margin: "0 0 2px", fontFamily: "Poppins, sans-serif" }}>{formatPrice(property.price)}</p>
-                  <p style={{ fontSize: 11, color: "#9ca3af", margin: 0 }}>{property.type === "rent" ? "/ yr" : "asking"}</p>
+                  <p style={{ fontSize: 10, fontWeight: 600, color: "#9ca3af", margin: "0 0 2px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Inspection Fee</p>
+                  <p style={{ fontWeight: 800, fontSize: 14, color: BLUE, margin: 0, fontFamily: "Poppins, sans-serif" }}>
+                    {property.inspectionFee
+                      ? formatPrice(property.inspectionFee)
+                      : property.agentFee || property.agent?.fee
+                        ? formatPrice(property.agentFee || property.agent?.fee)
+                        : "Contact Agent"}
+                  </p>
                 </div>
               </div>
 

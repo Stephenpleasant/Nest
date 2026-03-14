@@ -6,6 +6,7 @@ import UserDashboard from './Components/Users/Dashboard/Dashboard'
 import PropertyDetail from './Components/Users/Dashboard/propertiesdetails'
 import MyBookings from './Components/Users/Dashboard/Booking'
 import ProfilePage from './Components/Users/Profile/profile'
+import AgentProfilePage from './Components/Agents/Profile/profile'
 import WalletPage from './Components/Agents/Wallet/Wallet'
 import AdashBoard from './Components/Agents/Dashboard/Dashboard'
 import CreateListingPage from './Components/Agents/Dashboard/Createlistingpage'
@@ -56,7 +57,7 @@ function AgentLayout({ children }) {
     'Bookings':         '/agent-bookings',
     'Create a Listing': '/create-listing',
     'Wallet':           '/wallet',
-    'My Profile':       '/profile',
+    'My Profile':       '/agent-profile',
   }
 
   const activePage = Object.entries(routeMap).find(
@@ -132,6 +133,12 @@ function App() {
         <Route
           path="/edit/:id"
           element={<ProtectedRoute agentOnly><AgentLayout><EditListingPage /></AgentLayout></ProtectedRoute>}
+        />
+
+        {/* ── Agent profile route ── */}
+        <Route
+          path="/agent-profile"
+          element={<ProtectedRoute agentOnly><AgentLayout><AgentProfilePage /></AgentLayout></ProtectedRoute>}
         />
 
         {/* ── Fallback ── */}

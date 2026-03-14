@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Home, BookOpen, User, Settings, HelpCircle, LogOut } from "lucide-react";
+import LogoutModal from "../LogoutModal";
 
 const NAV_ITEMS = [
   { to: "/dashboard",  icon: Home,       label: "Dashboard" },
@@ -11,6 +13,7 @@ const NAV_ITEMS = [
 
 const Sidebar = ({ mobileOpen, setMobileOpen }) => {
   const location = useLocation();
+  const [showLogout, setShowLogout] = useState(false);
   const isActive = (path) => location.pathname === path;
 
   return (
@@ -60,7 +63,7 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
 
         <div style={{ padding:"12px 12px 28px" }}>
           <div style={{ height:1,background:"#f3f4f6",margin:"0 8px 12px" }}/>
-          <button onClick={()=>{ localStorage.removeItem("token");localStorage.removeItem("user");localStorage.removeItem("nestfind_user");window.location.href="/"; }}
+          <button onClick={() => setShowLogout(true)}
             style={{ display:"flex",alignItems:"center",gap:12,padding:"11px 14px",borderRadius:12,border:"1px solid transparent",background:"transparent",cursor:"pointer",width:"100%",transition:"all 0.18s" }}
             onMouseEnter={e=>{ e.currentTarget.style.background="#fef2f2";e.currentTarget.style.borderColor="#fecaca"; }}
             onMouseLeave={e=>{ e.currentTarget.style.background="transparent";e.currentTarget.style.borderColor="transparent"; }}
@@ -70,6 +73,8 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
           </button>
         </div>
       </nav>
+
+      {showLogout && <LogoutModal onClose={() => setShowLogout(false)} />}
 
       <style>{`
         .nestfind-sidebar { transform: translateX(-100%); }

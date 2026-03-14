@@ -1,5 +1,6 @@
 // src/components/Sidebar.jsx
 import { useState } from "react";
+import LogoutModal from "./Dashboard/LogoutModal";
 
 const BLUE    = "#1a56db";
 const NAVY    = "#0b1a2e";
@@ -118,6 +119,7 @@ const NavLink = ({ icon, label, active, onClick, danger }) => {
 /* ── Sidebar ── */
 export default function Sidebar({ activePage, onNavigate }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [showLogout, setShowLogout] = useState(false);
 
   const handleNavigate = (id) => {
     onNavigate(id);
@@ -213,12 +215,7 @@ export default function Sidebar({ activePage, onNavigate }) {
           onClick={() => handleNavigate("My Profile")}
         />
         <NavLink icon={<IconLogout />} label="Logout" danger
-          onClick={() => {
-            localStorage.removeItem("token");
-            localStorage.removeItem("user");
-            localStorage.removeItem("nestfind_user");
-            window.location.href = "/";
-          }}
+          onClick={() => { setDrawerOpen(false); setShowLogout(true); }}
         />
       </div>
 
@@ -334,6 +331,9 @@ export default function Sidebar({ activePage, onNavigate }) {
       }}>
         {navContent}
       </div>
+
+      {/* ── Logout Modal ── */}
+      {showLogout && <LogoutModal onClose={() => setShowLogout(false)} />}
     </>
   );
 }
