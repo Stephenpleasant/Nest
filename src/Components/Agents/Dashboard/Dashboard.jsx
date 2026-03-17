@@ -277,9 +277,8 @@ const ListingCard = ({ listing, onEdit, onDelete }) => {
 
 // ── Responsive CSS ─────────────────────────────────────────────────────────
 const RESPONSIVE_CSS = `
-  /* Mobile: full width, offset for fixed topbar (56px) */
-  .dash-layout { margin-left: 0 !important; }
-  .dash-root   { padding: 72px 16px 32px; min-height: 100vh; }
+  /* Pages sit inside AgentLayout's <main flex:1> — NO self-managed margin needed */
+  .dash-root   { padding: 72px 16px 32px; min-height: 100vh; width: 100%; box-sizing: border-box; }
   .dash-header { flex-direction: column !important; gap: 14px; align-items: flex-start !important; }
   .dash-stat-grid { flex-direction: column !important; }
   .dash-filters { flex-direction: column !important; gap: 10px !important; }
@@ -301,10 +300,9 @@ const RESPONSIVE_CSS = `
     .dash-status-pills { flex-wrap: wrap !important; }
     .dash-type-select { width: auto !important; }
   }
-  /* Desktop: sidebar is 260px wide, main shifts right */
   @media (min-width: 768px) {
-    .dash-layout { margin-left: 260px !important; }
-    .dash-root   { padding: 32px 28px 32px; }
+    /* AgentLayout's padding-top:0 kicks in — reset to desktop padding */
+    .dash-root { padding: 32px 28px 32px; }
   }
   @media (min-width: 900px) {
     .dash-root { padding: 32px 36px 32px; }
@@ -437,7 +435,7 @@ export default function AdashBoard({ onNavigate }) {
         />
       )}
 
-      <div className="nf-page-root dash-layout" style={{ minHeight: "100vh", background: "#f3f7ff" }}>
+      <div style={{ minHeight: "100vh", background: "#f3f7ff", width: "100%" }}>
       <div className="dash-root">
 
         {/* ── Header ── */}

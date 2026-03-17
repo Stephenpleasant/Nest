@@ -239,7 +239,7 @@ export default function EditListingPage() {
 
   if (loading) {
     return (
-      <div className="nf-page-root min-h-screen bg-gray-50 flex items-center justify-center">
+      <div style={{ width: "100%", minHeight: "100vh", background: "#f9fafb", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <div className="text-center">
           <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
           <p className="text-sm text-gray-500">Loading property...</p>
@@ -250,7 +250,7 @@ export default function EditListingPage() {
 
   if (fetchError) {
     return (
-      <div className="nf-page-root min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div style={{ width: "100%", minHeight: "100vh", background: "#f9fafb", display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
         <div className="bg-white rounded-xl border border-red-200 p-6 max-w-md w-full text-center">
           <div className="text-4xl mb-3">⚠️</div>
           <h2 className="text-base font-bold text-gray-900 mb-2">Could not load property</h2>
@@ -269,17 +269,14 @@ export default function EditListingPage() {
   return (
     <>
     <style>{`
-      .nf-page-root.el-layout { margin-left: 0; min-height: 100vh; background: #f9fafb; }
-      .el-inner  { max-width: 768px; margin: 0 auto; padding: 72px 16px 80px; }
+      /* AgentLayout handles the sidebar offset — page just needs inner padding */
+      .el-inner  { max-width: 860px; margin: 0 auto; padding: 72px 16px 80px; width: 100%; box-sizing: border-box; }
       @media (min-width: 480px) { .el-inner { padding: 72px 24px 80px; } }
       @media (min-width: 640px) { .el-inner { padding: 72px 32px 80px; } }
-      @media (min-width: 768px) {
-        .nf-page-root.el-layout { margin-left: 260px; }
-        .el-inner  { padding: 40px 32px 80px; }
-      }
-      @media (min-width: 1024px) { .el-inner { padding: 44px 40px 80px; } }
+      @media (min-width: 768px) { .el-inner { padding: 36px 32px 80px; } }
+      @media (min-width: 1024px) { .el-inner { padding: 40px 44px 80px; max-width: 960px; } }
     `}</style>
-    <div className="nf-page-root el-layout">
+    <div style={{ minHeight: "100vh", background: "#f9fafb", width: "100%" }}>
       <div className="el-inner">
 
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>

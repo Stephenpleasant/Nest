@@ -29,7 +29,7 @@ export default function ChangePasswordSection() {
   return (
     <div id="change-password">
       <SectionCard title="Change Password">
-        <div className="grid grid-cols-2 gap-4 max-w-2xl">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl">
           <FormField
             label="New Password"
             placeholder="Enter your new password"

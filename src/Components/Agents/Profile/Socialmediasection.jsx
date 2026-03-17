@@ -21,7 +21,7 @@ export default function SocialMediaSection() {
   return (
     <div id="social-media">
       <SectionCard title="Social Media">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField label="Facebook" placeholder="Enter your Facebook URL" value={form.facebook} onChange={set('facebook')} />
           <FormField label="Address (Twitter)" placeholder="Enter your Twitter URL" value={form.twitter} onChange={set('twitter')} />
           <FormField label="LinkedIn" placeholder="Enter your LinkedIn URL" value={form.linkedin} onChange={set('linkedin')} />

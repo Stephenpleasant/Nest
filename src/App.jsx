@@ -1,20 +1,32 @@
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import './index.css'
-import LandingPage from './Components/Dashboard'
-import UserDashboard from './Components/Users/Dashboard/Dashboard'
-import PropertyDetail from './Components/Users/Dashboard/propertiesdetails'
-import MyBookings from './Components/Users/Dashboard/Booking'
-import ProfilePage from './Components/Users/Profile/profile'
-import AgentProfilePage from './Components/Agents/Profile/profile'
-import WalletPage from './Components/Agents/Wallet/Wallet'
-import AdashBoard from './Components/Agents/Dashboard/Dashboard'
-import CreateListingPage from './Components/Agents/Dashboard/Createlistingpage'
-import EditListingPage from './Components/Agents/Dashboard/Editlistingpage'
-import Sidebar from './Components/Agents/navbar'
-import AgentOrdersPage from './Components/Agents/Bookings/AgentOrders'
+import LandingPage        from './Components/Dashboard'
+import UserDashboard      from './Components/Users/Dashboard/Dashboard'
+import PropertyDetail     from './Components/Users/Dashboard/propertiesdetails'
+import MyBookings         from './Components/Users/Dashboard/Booking'
+import ProfilePage        from './Components/Users/Profile/profile'
+import AgentProfilePage   from './Components/Agents/Profile/profile'
+import WalletPage         from './Components/Agents/Wallet/Wallet'
+import AdashBoard         from './Components/Agents/Dashboard/Dashboard'
+import CreateListingPage  from './Components/Agents/Dashboard/Createlistingpage'
+import EditListingPage    from './Components/Agents/Dashboard/Editlistingpage'
+import Sidebar            from './Components/Agents/navbar'
+import AgentOrdersPage    from './Components/Agents/Bookings/AgentOrders'
+import Settings           from './Components/Users/Settings/Setting'
 
 const NAV_W = 260
+
+// ── Route map shared by all agent layouts ─────────────────────────────────────
+
+const AGENT_ROUTE_MAP = {
+  'Dashboard':        '/agent-dashboard',
+  'Bookings':         '/agent-bookings',
+  'Create a Listing': '/create-listing',
+  'Wallet':           '/wallet',
+  'My Profile':       '/agent-profile',
+  'Settings':         '/settings',       // ← added
+}
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -52,20 +64,12 @@ function AgentLayout({ children }) {
   const navigate = useNavigate()
   const location = useLocation()
 
-  const routeMap = {
-    'Dashboard':        '/agent-dashboard',
-    'Bookings':         '/agent-bookings',
-    'Create a Listing': '/create-listing',
-    'Wallet':           '/wallet',
-    'My Profile':       '/agent-profile',
-  }
-
-  const activePage = Object.entries(routeMap).find(
+  const activePage = Object.entries(AGENT_ROUTE_MAP).find(
     ([, path]) => path === location.pathname
   )?.[0] ?? 'Dashboard'
 
   const handleNavigate = (page) => {
-    const path = routeMap[page]
+    const path = AGENT_ROUTE_MAP[page]
     if (path) navigate(path)
   }
 
@@ -78,6 +82,55 @@ function AgentLayout({ children }) {
       <style>{`
         .agent-main-content { margin-left: 0; }
         @media (min-width: 768px) { .agent-main-content { margin-left: ${NAV_W}px; } }
+      `}</style>
+    </div>
+  )
+}
+
+// ── Settings Layout ───────────────────────────────────────────────────────────
+
+function SettingsLayout() {
+  const navigate = useNavigate()
+  const user = getUser()
+  const isAgent = user?.userType === 'agent'
+
+  if (isAgent) {
+    return (
+      <div style={{ display: 'flex', minHeight: '100vh' }}>
+        <Sidebar
+          activePage="Settings"
+          onNavigate={(page) => {
+            const path = AGENT_ROUTE_MAP[page]
+            if (path) navigate(path)
+          }}
+        />
+        <main className="settings-main-content" style={{ minHeight: '100vh', background: '#f3f7ff', flex: 1 }}>
+          <Settings />
+        </main>
+        <style>{`
+          .settings-main-content { margin-left: 0; }
+          @media (min-width: 768px) { .settings-main-content { margin-left: ${NAV_W}px; } }
+        `}</style>
+      </div>
+    )
+  }
+
+  // Regular user — sidebar navigates using the same map
+  return (
+    <div style={{ display: 'flex', minHeight: '100vh' }}>
+      <Sidebar
+        activePage="Settings"
+        onNavigate={(page) => {
+          const path = AGENT_ROUTE_MAP[page]
+          if (path) navigate(path)
+        }}
+      />
+      <main className="settings-main-content" style={{ minHeight: '100vh', background: '#f3f7ff', flex: 1 }}>
+        <Settings />
+      </main>
+      <style>{`
+        .settings-main-content { margin-left: 0; }
+        @media (min-width: 768px) { .settings-main-content { margin-left: ${NAV_W}px; } }
       `}</style>
     </div>
   )
@@ -105,11 +158,17 @@ function App() {
         />
 
         {/* ── User routes ── */}
-        <Route path="/dashboard"     element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
-        <Route path="/userdashboard" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
-        <Route path="/bookings"      element={<ProtectedRoute><MyBookings /></ProtectedRoute>} />
-        <Route path="/profile"       element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+        <Route path="/dashboard"      element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
+        <Route path="/userdashboard"  element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
+        <Route path="/bookings"       element={<ProtectedRoute><MyBookings /></ProtectedRoute>} />
+        <Route path="/profile"        element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
         <Route path="/properties/:id" element={<PropertyDetail />} />
+
+        {/* ── Settings (agents + users) ── */}
+        <Route
+          path="/settings"
+          element={<ProtectedRoute><SettingsLayout /></ProtectedRoute>}
+        />
 
         {/* ── Agent routes ── */}
         <Route
@@ -128,14 +187,10 @@ function App() {
           path="/create-listing"
           element={<ProtectedRoute agentOnly><AgentLayout><CreateListingPage /></AgentLayout></ProtectedRoute>}
         />
-
-        {/* ── Edit listing route ── */}
         <Route
           path="/edit/:id"
           element={<ProtectedRoute agentOnly><AgentLayout><EditListingPage /></AgentLayout></ProtectedRoute>}
         />
-
-        {/* ── Agent profile route ── */}
         <Route
           path="/agent-profile"
           element={<ProtectedRoute agentOnly><AgentLayout><AgentProfilePage /></AgentLayout></ProtectedRoute>}

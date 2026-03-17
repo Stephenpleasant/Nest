@@ -1,6 +1,6 @@
 // src/components/Sidebar.jsx
 import { useState } from "react";
-import LogoutModal from "./Dashboard/LogoutModal";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const BLUE    = "#1a56db";
 const NAVY    = "#0b1a2e";
@@ -38,6 +38,12 @@ const IconWallet = () => (
 const IconProfile = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
     <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+  </svg>
+);
+const IconSettings = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="3"/>
+    <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
   </svg>
 );
 const IconLogout = () => (
@@ -119,10 +125,70 @@ const NavLink = ({ icon, label, active, onClick, danger }) => {
 /* ── Sidebar ── */
 export default function Sidebar({ activePage, onNavigate }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [showLogout, setShowLogout] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Read the registered user — check every key your backend might use
+  const storedUser = (() => {
+    try {
+      for (const key of ["user", "nestfind_user", "agent", "agentData"]) {
+        const raw = localStorage.getItem(key);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === "object") return parsed;
+        }
+      }
+      return {};
+    } catch { return {}; }
+  })();
+
+  // Try every possible field the backend might use for the name
+  const fullName =
+    storedUser?.fullName ||
+    storedUser?.full_name ||
+    storedUser?.name ||
+    storedUser?.displayName ||
+    storedUser?.display_name ||
+    [storedUser?.firstName, storedUser?.lastName].filter(Boolean).join(" ") ||
+    [storedUser?.first_name, storedUser?.last_name].filter(Boolean).join(" ") ||
+    storedUser?.agent?.name ||
+    storedUser?.agent?.fullName ||
+    [storedUser?.agent?.firstName, storedUser?.agent?.lastName].filter(Boolean).join(" ") ||
+    storedUser?.username ||
+    storedUser?.email?.split("@")[0] ||
+    "User";
+
+  const initials = fullName
+    .split(" ").slice(0, 2)
+    .map(w => w[0]?.toUpperCase() || "")
+    .join("") || "U";
+
+  // Determine active page — prefer prop, fall back to current path
+  const routeToPage = {
+    "/agent-dashboard": "Dashboard",
+    "/agent-bookings":  "Bookings",
+    "/create-listing":  "Create a Listing",
+    "/wallet":          "Wallet",
+    "/agent-profile":   "My Profile",
+    "/settings":        "Settings",
+  };
+  const currentPage = activePage ?? routeToPage[location.pathname] ?? "Dashboard";
 
   const handleNavigate = (id) => {
-    onNavigate(id);
+    if (onNavigate) {
+      onNavigate(id);
+    } else {
+      // fallback direct navigation
+      const pageToRoute = {
+        "Dashboard":        "/agent-dashboard",
+        "Bookings":         "/agent-bookings",
+        "Create a Listing": "/create-listing",
+        "Wallet":           "/wallet",
+        "My Profile":       "/agent-profile",
+        "Settings":         "/settings",
+      };
+      if (pageToRoute[id]) navigate(pageToRoute[id]);
+    }
     setDrawerOpen(false);
   };
 
@@ -197,7 +263,7 @@ export default function Sidebar({ activePage, onNavigate }) {
 
         {mainLinks.map(({ id, icon }) => (
           <NavLink key={id} icon={icon} label={id}
-            active={activePage === id}
+            active={currentPage === id}
             onClick={() => handleNavigate(id)}
           />
         ))}
@@ -211,11 +277,23 @@ export default function Sidebar({ activePage, onNavigate }) {
         }}>Account</span>
 
         <NavLink icon={<IconProfile />} label="My Profile"
-          active={activePage === "My Profile"}
+          active={currentPage === "My Profile"}
           onClick={() => handleNavigate("My Profile")}
         />
+
+        {/* ── Settings link ── */}
+        <NavLink icon={<IconSettings />} label="Settings"
+          active={currentPage === "Settings"}
+          onClick={() => handleNavigate("Settings")}
+        />
+
         <NavLink icon={<IconLogout />} label="Logout" danger
-          onClick={() => { setDrawerOpen(false); setShowLogout(true); }}
+          onClick={() => {
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+            localStorage.removeItem("nestfind_user");
+            window.location.href = "/";
+          }}
         />
       </div>
 
@@ -231,12 +309,12 @@ export default function Sidebar({ activePage, onNavigate }) {
           fontFamily: "'Poppins', sans-serif", fontWeight: 700,
           fontSize: 13, color: WHITE, flexShrink: 0,
           boxShadow: "0 2px 8px rgba(26,86,219,0.25)",
-        }}>JD</div>
+        }}>{ initials }</div>
         <div style={{ minWidth: 0 }}>
           <div style={{
             fontSize: 13, fontWeight: 600, color: NAVY,
             whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-          }}>Jane Doe</div>
+          }}>{ fullName }</div>
         </div>
       </div>
     </nav>
@@ -259,13 +337,9 @@ export default function Sidebar({ activePage, onNavigate }) {
           .nf-drawer-close    { display: grid !important; }
         }
 
-        /* Utility: pages that sit beside this sidebar */
-        .nf-page-root { margin-left: 0; }
-        @media (min-width: 768px) { .nf-page-root { margin-left: 260px; } }
-
-        /* Prevent horizontal overflow on mobile */
+        .nf-page-root { box-sizing: border-box; }
         *, *::before, *::after { box-sizing: border-box; }
-        body { overflow-x: hidden; }
+        html, body { overflow-x: hidden; }
       `}</style>
 
       {/* ── Desktop fixed sidebar ── */}
@@ -331,9 +405,6 @@ export default function Sidebar({ activePage, onNavigate }) {
       }}>
         {navContent}
       </div>
-
-      {/* ── Logout Modal ── */}
-      {showLogout && <LogoutModal onClose={() => setShowLogout(false)} />}
     </>
   );
 }
