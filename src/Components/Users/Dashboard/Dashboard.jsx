@@ -34,7 +34,7 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
         />
       )}
       <nav style={{
-        position: "fixed", left: 0, top: 0, height: "100vh", width: 256,
+        position: "fixed", left: 0, top: 0, height: "100vh", width: 220,
         background: "#fff", boxShadow: "4px 0 20px rgba(0,0,0,0.06)",
         display: "flex", flexDirection: "column",
         zIndex: 50, transition: "transform 0.3s ease-in-out",
@@ -121,10 +121,10 @@ function PropertyCard({ property }) {
           transition: "all 0.25s ease", display: "flex", flexDirection: "column", cursor: "pointer",
         }}
       >
-        <div style={{ position: "relative", height: 200, overflow: "hidden", background: "#e5e7eb" }}>
+        <div style={{ position: "relative", width: "100%", paddingBottom: "56.25%", overflow: "hidden", background: "#e5e7eb", flexShrink: 0 }}>
           <img
             src={property.image} alt={property.title}
-            style={{ width: "100%", height: "100%", objectFit: "cover", transform: hovered ? "scale(1.06)" : "scale(1)", transition: "transform 0.45s ease" }}
+            style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", transform: hovered ? "scale(1.06)" : "scale(1)", transition: "transform 0.45s ease" }}
             onError={e => { e.target.src = "https://placehold.co/600x400/e5e7eb/6b7280?text=Property"; }}
           />
           <div style={{ position: "absolute", top: 14, left: 14 }}>
@@ -234,10 +234,13 @@ export default function UserDashboard() {
   const paginated = filtered.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f8fafc", fontFamily: "Inter, sans-serif", display: "flex" }}>
+    <div style={{ minHeight: "100vh", background: "#f8fafc", fontFamily: "Inter, sans-serif", display: "flex", overflow: "hidden", width: "100%" }}>
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet" />
 
       <style>{`
+        * { box-sizing: border-box; }
+        body, html { overflow-x: hidden; max-width: 100%; }
+
         /* Sidebar responsive */
         .nestfind-sidebar { transform: translateX(-100%); }
         .nestfind-sidebar.open { transform: translateX(0); }
@@ -245,7 +248,7 @@ export default function UserDashboard() {
 
         /* Main content offset */
         .dash-main { margin-left: 0 !important; }
-        @media (min-width: 768px) { .dash-main { margin-left: 256px !important; } }
+        @media (min-width: 768px) { .dash-main { margin-left: 220px !important; } }
 
         /* Mobile top bar */
         .dash-topbar { display: flex; }
@@ -293,7 +296,7 @@ export default function UserDashboard() {
 
       <Sidebar mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
 
-      <main className="dash-main" style={{ flex: 1, minHeight: "100vh", minWidth: 0, boxSizing: "border-box" }}>
+      <main className="dash-main" style={{ flex: 1, minHeight: "100vh", minWidth: 0, maxWidth: "100%", boxSizing: "border-box", overflowX: "hidden" }}>
 
         {/* Mobile top bar */}
         <div className="dash-topbar" style={{ alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "#fff", boxShadow: "0 1px 8px rgba(0,0,0,0.08)", position: "sticky", top: 0, zIndex: 30 }}>
@@ -308,7 +311,7 @@ export default function UserDashboard() {
         {/* ── HERO ── */}
         <div className="dash-hero" style={{
           position: "relative", backgroundImage: "url(https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1400&q=80)",
-          backgroundSize: "cover", backgroundPosition: "center",
+          backgroundSize: "cover", backgroundPosition: "center", overflow: "hidden",
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(7,20,40,0.55) 0%, rgba(7,20,40,0.65) 100%)" }} />

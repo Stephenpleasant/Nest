@@ -152,16 +152,19 @@ export default function CreateListingPage() {
   return (
     <>
     <style>{`
-      /* AgentLayout handles the sidebar offset — page just needs inner padding */
-      .cl-inner  { max-width: 860px; margin: 0 auto; padding: 72px 16px 80px; width: 100%; box-sizing: border-box; }
-      @media (min-width: 480px) { .cl-inner { padding: 72px 24px 80px; } }
-      @media (min-width: 640px) { .cl-inner { padding: 72px 32px 80px; } }
-      @media (min-width: 768px) { .cl-inner { padding: 36px 32px 80px; } }
+      *, *::before, *::after { box-sizing: border-box; }
+      body, html { overflow-x: hidden; }
+      /* AgentLayout in App.jsx already applies margin-left:260px — no extra margin here */
+      .cl-layout-root { min-height: 100vh; background: #f9fafb; width: 100%; }
+      .cl-inner { max-width: 860px; margin: 0 auto; padding: 72px 14px 80px; width: 100%; }
+      @media (min-width: 480px) { .cl-inner { padding: 72px 20px 80px; } }
+      @media (min-width: 640px) { .cl-inner { padding: 72px 28px 80px; } }
+      @media (min-width: 768px) { .cl-inner { padding: 36px 28px 80px; } }
       @media (min-width: 1024px) { .cl-inner { padding: 40px 44px 80px; max-width: 960px; } }
       .cl-header { flex-direction: column; gap: 12px; align-items: flex-start !important; }
       @media (min-width: 480px) { .cl-header { flex-direction: row !important; align-items: center !important; } }
     `}</style>
-    <div style={{ minHeight: "100vh", background: "#f9fafb", width: "100%" }}>
+    <div className="cl-layout-root">
       <div className="cl-inner">
 
         <div className="cl-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
@@ -227,7 +230,6 @@ export default function CreateListingPage() {
           isLoading={isSubmitting}
         />
       </div>
-    </div>
-    </>
+    </div></>
   );
 }

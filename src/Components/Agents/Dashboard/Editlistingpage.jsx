@@ -269,14 +269,17 @@ export default function EditListingPage() {
   return (
     <>
     <style>{`
-      /* AgentLayout handles the sidebar offset — page just needs inner padding */
-      .el-inner  { max-width: 860px; margin: 0 auto; padding: 72px 16px 80px; width: 100%; box-sizing: border-box; }
-      @media (min-width: 480px) { .el-inner { padding: 72px 24px 80px; } }
-      @media (min-width: 640px) { .el-inner { padding: 72px 32px 80px; } }
-      @media (min-width: 768px) { .el-inner { padding: 36px 32px 80px; } }
+      *, *::before, *::after { box-sizing: border-box; }
+      body, html { overflow-x: hidden; }
+      /* AgentLayout in App.jsx already applies margin-left:260px — no extra margin here */
+      .el-layout-root { min-height: 100vh; background: #f9fafb; width: 100%; }
+      .el-inner { max-width: 860px; margin: 0 auto; padding: 72px 14px 80px; width: 100%; }
+      @media (min-width: 480px) { .el-inner { padding: 72px 20px 80px; } }
+      @media (min-width: 640px) { .el-inner { padding: 72px 28px 80px; } }
+      @media (min-width: 768px) { .el-inner { padding: 36px 28px 80px; } }
       @media (min-width: 1024px) { .el-inner { padding: 40px 44px 80px; max-width: 960px; } }
     `}</style>
-    <div style={{ minHeight: "100vh", background: "#f9fafb", width: "100%" }}>
+    <div className="el-layout-root">
       <div className="el-inner">
 
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
