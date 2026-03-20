@@ -290,11 +290,11 @@ export default function UserDashboard() {
         @media (min-width: 640px) { .dash-content { padding: 28px 24px 60px !important; } }
         @media (min-width: 1024px) { .dash-content { padding: 32px 36px 60px !important; } }
 
-        /* Property grid — 1 col on tiny, 2 from 420px, 3 from 900px, 4 from 1280px */
+        /* Property grid — 1 col on tiny, 2 from 420px, 3 from 900px, 4 from 1500px */
         .prop-grid { grid-template-columns: 1fr !important; }
         @media (min-width: 420px) { .prop-grid { grid-template-columns: repeat(2, 1fr) !important; } }
         @media (min-width: 900px) { .prop-grid { grid-template-columns: repeat(3, 1fr) !important; } }
-        @media (min-width: 1280px) { .prop-grid { grid-template-columns: repeat(4, 1fr) !important; } }
+        @media (min-width: 1500px) { .prop-grid { grid-template-columns: repeat(4, 1fr) !important; } }
 
         /* Pagination */
         .dash-pagination { flex-wrap: wrap !important; gap: 5px !important; }
