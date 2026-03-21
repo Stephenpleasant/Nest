@@ -1,63 +1,96 @@
 import { useState } from 'react'
-import { Clock, CheckCircle, AlertCircle, Phone } from 'lucide-react'
+import { Clock, CheckCircle, AlertCircle, XCircle, Phone, Mail, Calendar, MapPin } from 'lucide-react'
 
 const STATUS_CONFIG = {
-  pending:   { icon: Clock,       bg: 'bg-yellow-50', text: 'text-yellow-700', border: 'border-yellow-200', label: 'pending'   },
-  confirmed: { icon: CheckCircle, bg: 'bg-green-50',  text: 'text-green-700',  border: 'border-green-200',  label: 'confirmed' },
-  disputed:  { icon: AlertCircle, bg: 'bg-red-50',    text: 'text-red-700',    border: 'border-red-200',    label: 'disputed'  },
+  pending:   { icon: Clock,        bg: 'bg-yellow-50', text: 'text-yellow-700', border: 'border-yellow-200', label: 'Pending'   },
+  confirmed: { icon: CheckCircle,  bg: 'bg-green-50',  text: 'text-green-700',  border: 'border-green-200',  label: 'Confirmed' },
+  disputed:  { icon: AlertCircle,  bg: 'bg-red-50',    text: 'text-red-700',    border: 'border-red-200',    label: 'Disputed'  },
+  cancelled: { icon: XCircle,      bg: 'bg-gray-50',   text: 'text-gray-500',   border: 'border-gray-200',   label: 'Cancelled' },
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '—'
+  try {
+    return new Date(dateStr).toLocaleDateString('en-GB', {
+      day: 'numeric', month: 'short', year: 'numeric',
+    })
+  } catch { return dateStr }
 }
 
 export default function OrderRow({ order, last, onUpdateStatus }) {
-  const [status, setStatus] = useState(order.status)
+  const [status, setStatus] = useState(order.status || 'pending')
+  const [updating, setUpdating] = useState(false)
 
   const handleUpdate = async (newStatus) => {
-    setStatus(newStatus) // optimistic update
-    await onUpdateStatus(order._id || order.id, newStatus)
+    setUpdating(true)
+    setStatus(newStatus)
+    await onUpdateStatus(order._id, newStatus)
+    setUpdating(false)
   }
 
   const cfg  = STATUS_CONFIG[status] || STATUS_CONFIG.pending
   const Icon = cfg.icon
 
-  // 🔁 Adjust these field names to match your API response shape
-  const title  = order.propertyTitle || order.product || 'Property'
-  const image  = order.propertyImage || order.image   || ''
-  const txId   = (order._id || order.transactionId || '').toString().slice(-6)
-  const date   = order.inspectionDate
-    ? new Date(order.inspectionDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-    : order.date || '—'
-  const client = order.clientName  || order.client || 'Client'
-  const phone  = order.clientPhone || order.phone  || ''
-  const amount = order.amount || 0
+  const txId   = (order._id || '').toString().slice(-6).toUpperCase()
+  const image  = order.propertyImage || ''
+  const title  = order.propertyTitle || 'Property'
+  const amount = Number(order.amount) || 0
+  const client = order.clientName  || 'Client'
+  const phone  = order.clientPhone || ''
+  const email  = order.clientEmail || ''
+  const date   = formatDate(order.date || order.bookedAt)
+  const time   = order.time || ''
+  const address = order.propertyAddress || ''
 
   return (
-    <div className={`grid grid-cols-[2fr_1.2fr_1fr_1.4fr_1fr_1.2fr] items-center px-6 py-4 ${!last ? 'border-b border-gray-100' : ''} hover:bg-gray-50 transition-colors`}>
+    <div className={`grid grid-cols-[2fr_1.2fr_1fr_1.4fr_1fr_1.2fr] items-center px-6 py-4 ${!last ? 'border-b border-gray-100' : ''} hover:bg-gray-50/60 transition-colors`}>
 
-      {/* Product info */}
-      <div className="flex items-center gap-3">
-        <img
-          src={image}
-          alt={title}
-          className="w-12 h-12 rounded-xl object-cover border border-gray-100 bg-gray-100"
-          onError={e => { e.target.src = 'https://placehold.co/48x48/e5e7eb/9ca3af?text=?' }}
-        />
-        <div>
-          <p className="text-sm font-semibold text-gray-900">{title}</p>
-          <p className="text-xs text-gray-400 mt-0.5">₦{amount.toLocaleString()}</p>
+      {/* Property info */}
+      <div className="flex items-center gap-3 min-w-0">
+        <div className="relative w-12 h-12 flex-shrink-0">
+          <img
+            src={image}
+            alt={title}
+            className="w-12 h-12 rounded-xl object-cover border border-gray-100 bg-gray-100"
+            onError={e => { e.target.src = 'https://placehold.co/48x48/e5e7eb/9ca3af?text=?' }}
+          />
+          {order.priceType === 'rent' && (
+            <span className="absolute -bottom-1 -right-1 text-[9px] font-bold px-1 py-0.5 rounded-full bg-blue-100 text-blue-700 leading-none">RENT</span>
+          )}
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-gray-900 truncate">{title}</p>
+          <p className="text-xs font-bold text-blue-600 mt-0.5">₦{amount.toLocaleString()}</p>
+          {address && (
+            <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5 truncate">
+              <MapPin size={10} className="flex-shrink-0" /> {address}
+            </p>
+          )}
         </div>
       </div>
 
       {/* Transaction ID */}
       <span className="text-sm font-mono text-gray-500">#{txId}</span>
 
-      {/* Date */}
-      <span className="text-sm text-gray-600">{date}</span>
+      {/* Date & time */}
+      <div>
+        <p className="text-sm text-gray-700 flex items-center gap-1">
+          <Calendar size={12} className="text-gray-400" /> {date}
+        </p>
+        {time && <p className="text-xs text-gray-400 mt-0.5">{time}</p>}
+      </div>
 
       {/* Client */}
-      <div>
-        <p className="text-sm font-medium text-gray-800">{client}</p>
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-gray-800 truncate">{client}</p>
         {phone && (
           <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
             <Phone size={11} /> {phone}
+          </p>
+        )}
+        {email && !phone && (
+          <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5 truncate">
+            <Mail size={11} /> {email}
           </p>
         )}
       </div>
@@ -76,24 +109,35 @@ export default function OrderRow({ order, last, onUpdateStatus }) {
           <>
             <button
               onClick={() => handleUpdate('confirmed')}
-              className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-all hover:opacity-90 active:scale-95"
+              disabled={updating}
+              className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-all hover:opacity-90 active:scale-95 disabled:opacity-50"
               style={{ background: '#1a56db' }}
             >
-              ✓ Confirm Order
+              <CheckCircle size={12} /> Confirm
             </button>
             <button
               onClick={() => handleUpdate('disputed')}
-              className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-red-500 hover:bg-red-600 transition-all active:scale-95"
+              disabled={updating}
+              className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-red-500 hover:bg-red-600 transition-all active:scale-95 disabled:opacity-50"
             >
-              ⊘ Report Dispute
+              <AlertCircle size={12} /> Dispute
             </button>
           </>
         )}
         {status === 'confirmed' && (
-          <span className="text-xs text-green-600 font-semibold px-3 py-1.5 rounded-lg bg-green-50 border border-green-200 text-center">Order Confirmed</span>
+          <span className="text-xs text-green-600 font-semibold px-3 py-1.5 rounded-lg bg-green-50 border border-green-200 text-center">
+            ✓ Confirmed
+          </span>
         )}
         {status === 'disputed' && (
-          <span className="text-xs text-red-600 font-semibold px-3 py-1.5 rounded-lg bg-red-50 border border-red-200 text-center">Dispute Reported</span>
+          <span className="text-xs text-red-600 font-semibold px-3 py-1.5 rounded-lg bg-red-50 border border-red-200 text-center">
+            ⚠ Disputed
+          </span>
+        )}
+        {status === 'cancelled' && (
+          <span className="text-xs text-gray-500 font-semibold px-3 py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-center">
+            Cancelled
+          </span>
         )}
       </div>
 

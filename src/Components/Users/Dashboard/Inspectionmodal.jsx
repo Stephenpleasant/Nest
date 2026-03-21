@@ -106,7 +106,17 @@ const InspectionModal = ({ property, onClose }) => {
 
       const booking = {
         id: Date.now(), propertyId: property._id, propertyTitle: property.title,
-        propertyAddress: property.address, propertyImage: property.image,
+        propertyAddress: property.address,
+        propertyImage: (() => {
+          // Resolve image from mapped property.image (already a string) or raw images array
+          const raw = property.image || property.images?.[0];
+          if (!raw) return "https://placehold.co/400x300/e5e7eb/6b7280?text=Property";
+          const str = typeof raw === "string" ? raw : raw?.url || raw?.src || raw?.path || null;
+          if (!str || str === "null" || str === "undefined") return "https://placehold.co/400x300/e5e7eb/6b7280?text=Property";
+          // Prepend API base for relative paths
+          if (str.startsWith("http://") || str.startsWith("https://")) return str;
+          return `${API_BASE}${str.startsWith("/") ? "" : "/"}${str}`;
+        })(),
         agentName: property.agent.name, price: property.price, priceType: property.type,
         date: selectedDate, time: selectedTime, note, userEmail, userName,
         bookedAt: new Date().toISOString(), status: "Pending Confirmation",

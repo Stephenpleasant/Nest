@@ -45,7 +45,12 @@ const PropertyDetail = () => {
           parking:      p.parking ?? 0,
           description:  p.description || "",
           features:     Array.isArray(p.features) ? p.features : [],
-          image:        p.images?.[0] || "https://placehold.co/1400x900/e5e7eb/6b7280?text=Property",
+          image:        (() => {
+            const raw = p.images?.[0] || p.image || p.thumbnail;
+            if (!raw) return "https://placehold.co/1400x900/e5e7eb/6b7280?text=Property";
+            if (typeof raw === "string") return raw;
+            return raw?.url || raw?.src || raw?.path || "https://placehold.co/1400x900/e5e7eb/6b7280?text=Property";
+          })(),
           videoUrl:     (() => {
             const v = p.videoUrl || p.video || (Array.isArray(p.videos) ? p.videos[0] : undefined);
             if (!v) return null;

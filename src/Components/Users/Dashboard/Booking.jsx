@@ -15,6 +15,17 @@ function formatDateLabel(dateStr) {
 
 const formatPrice = (price) => "₦" + new Intl.NumberFormat("en-NG").format(price);
 
+const API_BASE = import.meta.env?.VITE_API_BASE_URL || "https://gtimeconnect.onrender.com";
+
+/* Resolve relative image paths saved from the API to full URLs */
+const resolveImageUrl = (url) => {
+  if (!url || url === "null" || url === "undefined") return "https://placehold.co/400x300/e5e7eb/6b7280?text=Property";
+  const str = typeof url === "string" ? url : url?.url || url?.src || null;
+  if (!str) return "https://placehold.co/400x300/e5e7eb/6b7280?text=Property";
+  if (str.startsWith("http://") || str.startsWith("https://")) return str;
+  return `${API_BASE}${str.startsWith("/") ? "" : "/"}${str}`;
+};
+
 const STATUS_STYLES = {
   "Pending Confirmation": { bg:"#fefce8",color:"#854d0e",border:"#fde68a" },
   "Confirmed":            { bg:"#f0fdf4",color:"#166534",border:"#bbf7d0" },
@@ -108,33 +119,85 @@ const MyBookings = () => {
     const params = new URLSearchParams(window.location.search);
     const trxref = params.get("trxref") || params.get("reference");
 
-    if (trxref) {
-      // ── Paystack just redirected back — restore the pending booking ──
-      try {
-        const pending = JSON.parse(localStorage.getItem("nestfind_pending_booking") || "null");
-        const existing = JSON.parse(localStorage.getItem("nestfind_bookings") || "[]");
+    const dedup = (arr) => {
+      const seen = new Set();
+      return arr.filter(b => { if (seen.has(b.id)) return false; seen.add(b.id); return true; });
+    };
 
-        let updated = existing;
-        if (pending) {
-          // Only add if not already in the list
-          const alreadySaved = existing.some(b => b.id === pending.id);
-          if (!alreadySaved) {
-            updated = [{ ...pending, status:"Pending Confirmation" }, ...existing];
-            localStorage.setItem("nestfind_bookings", JSON.stringify(updated));
+    // Detect if a stored propertyImage is actually a valid image URL
+    const isValidImageUrl = (url) => {
+      if (!url || typeof url !== "string") return false;
+      if (url === "null" || url === "undefined") return false;
+      if (!url.startsWith("http")) return false;
+      const lower = url.toLowerCase();
+      return (
+        lower.includes(".jpg") || lower.includes(".jpeg") || lower.includes(".png") ||
+        lower.includes(".webp") || lower.includes(".gif") || lower.includes(".svg") ||
+        lower.includes("unsplash.com") || lower.includes("cloudinary") ||
+        lower.includes("placehold.co") || lower.includes("pravatar") ||
+        lower.includes("/images/") || lower.includes("/uploads/") || lower.includes("/media/")
+      );
+    };
+
+    // Re-fetch the correct image URL for a property from the API
+    const fetchPropertyImage = async (propertyId) => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(`${API_BASE}/api/v1/properties/details/${propertyId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        const p = data.property || data.data || data;
+        const raw = p.images?.[0];
+        if (!raw) return null;
+        const url = typeof raw === "string" ? raw : raw?.url || raw?.src || raw?.path || null;
+        if (!url) return null;
+        if (url.startsWith("http")) return url;
+        return `${API_BASE}${url.startsWith("/") ? "" : "/"}${url}`;
+      } catch { return null; }
+    };
+
+    // Fix bookings with broken images by re-fetching the property
+    const repairImages = async (arr) => {
+      return Promise.all(arr.map(async (b) => {
+        if (isValidImageUrl(b.propertyImage)) return b;
+        const freshImage = b.propertyId ? await fetchPropertyImage(b.propertyId) : null;
+        return {
+          ...b,
+          propertyImage: freshImage || "https://placehold.co/400x300/e5e7eb/6b7280?text=Property",
+        };
+      }));
+    };
+
+    const load = async () => {
+      if (trxref) {
+        try {
+          const pending = JSON.parse(localStorage.getItem("nestfind_pending_booking") || "null");
+          const existing = JSON.parse(localStorage.getItem("nestfind_bookings") || "[]");
+          let updated = existing;
+          if (pending) {
+            const alreadySaved = existing.some(b => b.id === pending.id);
+            if (!alreadySaved) updated = [{ ...pending, status:"Pending Confirmation" }, ...existing];
+            setSuccessBooking(pending);
+            localStorage.removeItem("nestfind_pending_booking");
           }
-          setSuccessBooking(pending);
-          localStorage.removeItem("nestfind_pending_booking");
+          updated = await repairImages(dedup(updated));
+          localStorage.setItem("nestfind_bookings", JSON.stringify(updated));
+          setBookings(updated);
+        } catch {
+          setBookings(dedup(JSON.parse(localStorage.getItem("nestfind_bookings") || "[]")));
         }
-        setBookings(updated);
-      } catch {
-        setBookings(JSON.parse(localStorage.getItem("nestfind_bookings") || "[]"));
+        setPaymentSuccess(true);
+        window.history.replaceState({}, "", window.location.pathname);
+      } else {
+        const raw = JSON.parse(localStorage.getItem("nestfind_bookings") || "[]");
+        const repaired = await repairImages(dedup(raw));
+        localStorage.setItem("nestfind_bookings", JSON.stringify(repaired));
+        setBookings(repaired);
       }
-      setPaymentSuccess(true);
-      // Strip Paystack params from URL cleanly
-      window.history.replaceState({}, "", window.location.pathname);
-    } else {
-      setBookings(JSON.parse(localStorage.getItem("nestfind_bookings") || "[]"));
-    }
+    };
+
+    load();
   }, []);
 
   const cancelBooking = (id) => {
@@ -273,7 +336,7 @@ const MyBookings = () => {
                       <div className="booking-card-inner" style={{ display:"flex" }}>
                         {/* Image */}
                         <div className="booking-img" style={{ flexShrink:0,position:"relative",overflow:"hidden" }}>
-                          <img src={booking.propertyImage} alt={booking.propertyTitle} style={{ width:"100%",height:"100%",objectFit:"cover",display:"block" }}/>
+                          <img src={resolveImageUrl(booking.propertyImage)} alt={booking.propertyTitle} style={{ width:"100%",height:"100%",objectFit:"cover",display:"block" }} onError={e => { e.currentTarget.src = "https://placehold.co/400x300/e5e7eb/6b7280?text=Property"; }}/>
                           <div style={{ position:"absolute",bottom:10,left:10,background:booking.priceType==="rent"?BLUE:NAVY,color:WHITE,fontSize:10,fontWeight:700,padding:"3px 11px",borderRadius:100,letterSpacing:"0.5px",textTransform:"uppercase" }}>
                             {booking.priceType==="rent"?"For Rent":"For Sale"}
                           </div>
