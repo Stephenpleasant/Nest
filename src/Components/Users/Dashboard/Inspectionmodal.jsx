@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ChevronLeft, ChevronRight, Clock, Mail, CreditCard, CheckCircle, User,
 } from "lucide-react";
@@ -18,6 +18,8 @@ const InspectionModal = ({ property, onClose }) => {
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
   const [paymentError, setPaymentError] = useState("");
+
+
 
   const currentUser = (() => {
     try { return JSON.parse(localStorage.getItem("nestfind_user") || "{}"); } catch { return {}; }
@@ -48,35 +50,60 @@ const InspectionModal = ({ property, onClose }) => {
     setSelectedTime(null);
   };
 
+  // Converts "10:00 AM" / "2:00 PM" → "10:00" / "14:00"
+  const to24Hour = (timeStr) => {
+    if (!timeStr) return "";
+    const [time, modifier] = timeStr.split(" ");
+    let [hours, minutes] = time.split(":").map(Number);
+    if (modifier === "AM" && hours === 12) hours = 0;
+    if (modifier === "PM" && hours !== 12) hours += 12;
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+  };
+
   const handleMakePayment = async (e) => {
     e.preventDefault();
     setLoading(true);
     setPaymentError("");
     try {
-      const payload = {
-        propertyId:      property._id,
-        propertyTitle:   property.title,
-        propertyAddress: property.address,
-        agentName:       property.agent.name,
-        price:           property.price,
-        priceType:       property.type,
-        date:            selectedDate,
-        time:            selectedTime,
-        note,
-        userEmail,
-        userName,
-      };
-      const res = await fetch("/api/bookings/initiate-payment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const token = localStorage.getItem("token");
+
+      // The callback URL Paystack returns the user to after payment.
+      // Since Paystack hardcodes the redirect to /bookings on your backend,
+      // we send /bookings as the callback so Booking.jsx can handle the return.
+      const callbackUrl = `${window.location.origin}/bookings`;
+
+      const API_BASE = "https://gtimeconnect.onrender.com";
+
+      const res = await fetch(
+        `${API_BASE}/api/v1/booking/${property._id}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            bookedDate:   selectedDate,
+            startTime:    to24Hour(selectedTime),
+            notes:        note,
+            callbackUrl,
+          }),
+        }
+      );
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || "Payment initiation failed. Please try again.");
+        throw new Error(err.message || "Booking failed. Please try again.");
       }
       const data = await res.json();
-      if (data.paymentUrl) { window.location.href = data.paymentUrl; return; }
+      // Support multiple Paystack response shapes:
+      // { paymentUrl } | { data: { authorization_url } } | { authorization_url }
+      const payUrl =
+        data.paymentUrl ||
+        data.authorization_url ||
+        data.data?.authorization_url ||
+        data.data?.paymentUrl ||
+        null;
+
       const booking = {
         id: Date.now(), propertyId: property._id, propertyTitle: property.title,
         propertyAddress: property.address, propertyImage: property.image,
@@ -84,8 +111,17 @@ const InspectionModal = ({ property, onClose }) => {
         date: selectedDate, time: selectedTime, note, userEmail, userName,
         bookedAt: new Date().toISOString(), status: "Pending Confirmation",
       };
-      const existing = JSON.parse(localStorage.getItem("nestfind_bookings") || "[]");
-      localStorage.setItem("nestfind_bookings", JSON.stringify([booking, ...existing]));
+      // Save FULL booking to localStorage — survives cross-page Paystack redirect
+      // Booking.jsx reads "nestfind_pending_booking" on return and adds it to the bookings list
+      localStorage.setItem("nestfind_pending_booking", JSON.stringify(booking));
+
+      // Paystack redirect — save booking first, then redirect
+      if (payUrl) {
+        window.location.href = payUrl;
+        return;
+      }
+
+      // No payment URL returned — go straight to success step
       setLoading(false);
       setStep(3);
     } catch (err) {

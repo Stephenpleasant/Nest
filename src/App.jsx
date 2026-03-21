@@ -12,6 +12,7 @@ import AdashBoard         from './Components/Agents/Dashboard/Dashboard'
 import CreateListingPage  from './Components/Agents/Dashboard/Createlistingpage'
 import EditListingPage    from './Components/Agents/Dashboard/Editlistingpage'
 import Sidebar            from './Components/Agents/navbar'
+import UserSidebar        from './Components/Users/Dashboard/Navbar'
 import AgentOrdersPage    from './Components/Agents/Bookings/AgentOrders'
 import Settings           from './Components/Users/Settings/Setting'
 
@@ -91,6 +92,7 @@ function AgentLayout({ children }) {
 
 function SettingsLayout() {
   const navigate = useNavigate()
+  const [mobileOpen, setMobileOpen] = useState(false)
   const user = getUser()
   const isAgent = user?.userType === 'agent'
 
@@ -115,22 +117,16 @@ function SettingsLayout() {
     )
   }
 
-  // Regular user — sidebar navigates using the same map
+  // Regular user — uses the user sidebar (Navbar.jsx)
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <Sidebar
-        activePage="Settings"
-        onNavigate={(page) => {
-          const path = AGENT_ROUTE_MAP[page]
-          if (path) navigate(path)
-        }}
-      />
+      <UserSidebar mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
       <main className="settings-main-content" style={{ minHeight: '100vh', background: '#f3f7ff', flex: 1 }}>
         <Settings />
       </main>
       <style>{`
         .settings-main-content { margin-left: 0; }
-        @media (min-width: 768px) { .settings-main-content { margin-left: ${NAV_W}px; } }
+        @media (min-width: 768px) { .settings-main-content { margin-left: 256px; } }
       `}</style>
     </div>
   )

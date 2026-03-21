@@ -233,7 +233,7 @@ export default function UserDashboard() {
   const paginated = filtered.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f8fafc", fontFamily: "Inter, sans-serif", display: "flex", overflow: "hidden", width: "100%" }}>
+    <div style={{ minHeight: "100vh", background: "#f8fafc", fontFamily: "Inter, sans-serif", display: "flex", overflow: "hidden", width: "100%", maxWidth: "100vw", boxSizing: "border-box" }}>
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet" />
 
       <style>{`
@@ -266,14 +266,14 @@ export default function UserDashboard() {
         @media (min-width: 768px) { .dash-hero-title { font-size: 2.1rem !important; } }
 
         /* Search bar: stacks vertically on mobile */
-        .dash-search-bar { flex-direction: column !important; border-radius: 14px !important; }
-        @media (min-width: 600px) { .dash-search-bar { flex-direction: row !important; } }
+        .dash-search-bar { flex-direction: column !important; border-radius: 14px !important; width: 100% !important; max-width: 100% !important; }
+        @media (min-width: 640px) { .dash-search-bar { flex-direction: row !important; max-width: 580px !important; } }
 
-        .dash-search-field { border-right: none !important; border-bottom: 1px solid #e5e7eb !important; }
-        @media (min-width: 600px) { .dash-search-field { border-right: 1px solid #e5e7eb !important; border-bottom: none !important; } }
+        .dash-search-field { border-right: none !important; border-bottom: 1px solid #e5e7eb !important; min-width: 0 !important; }
+        @media (min-width: 640px) { .dash-search-field { border-right: 1px solid #e5e7eb !important; border-bottom: none !important; } }
 
         .dash-search-btn { border-radius: 0 0 14px 14px !important; width: 100% !important; }
-        @media (min-width: 600px) { .dash-search-btn { border-radius: 0 14px 14px 0 !important; width: auto !important; } }
+        @media (min-width: 640px) { .dash-search-btn { border-radius: 0 14px 14px 0 !important; width: auto !important; } }
 
         /* Selects on mobile: full width with comfortable tap targets */
         .dash-select-wrap { min-height: 48px !important; }
@@ -290,10 +290,10 @@ export default function UserDashboard() {
         @media (min-width: 640px) { .dash-content { padding: 28px 24px 60px !important; } }
         @media (min-width: 1024px) { .dash-content { padding: 32px 36px 60px !important; } }
 
-        /* Property grid — 1 col on tiny, 2 from 420px, 3 from 900px, 4 from 1500px */
+        /* Property grid — 1 col on mobile, 2 col from 560px, 3 from 960px, 4 from 1500px */
         .prop-grid { grid-template-columns: 1fr !important; }
-        @media (min-width: 420px) { .prop-grid { grid-template-columns: repeat(2, 1fr) !important; } }
-        @media (min-width: 900px) { .prop-grid { grid-template-columns: repeat(3, 1fr) !important; } }
+        @media (min-width: 560px) { .prop-grid { grid-template-columns: repeat(2, 1fr) !important; } }
+        @media (min-width: 960px) { .prop-grid { grid-template-columns: repeat(3, 1fr) !important; } }
         @media (min-width: 1500px) { .prop-grid { grid-template-columns: repeat(4, 1fr) !important; } }
 
         /* Pagination */
@@ -306,7 +306,7 @@ export default function UserDashboard() {
 
       <Sidebar mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
 
-      <main className="dash-main" style={{ flex: 1, minHeight: "100vh", minWidth: 0, maxWidth: "100%", boxSizing: "border-box", overflowX: "hidden" }}>
+      <main className="dash-main" style={{ flex: 1, minHeight: "100vh", minWidth: 0, maxWidth: "100%", width: "100%", boxSizing: "border-box", overflowX: "hidden" }}>
 
         {/* Mobile top bar */}
         <div className="dash-topbar" style={{ alignItems: "center", justifyContent: "space-between", padding: "12px 14px", background: "#fff", boxShadow: "0 1px 8px rgba(0,0,0,0.08)", position: "sticky", top: 0, zIndex: 30 }}>
