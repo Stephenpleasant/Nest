@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 
-const API_BASE = import.meta.env?.VITE_API_BASE_URL || 'https://gtimeconnect.onrender.com'
+// Normalise: strip trailing slash or /api so we always append /api/v1/... cleanly
+const _raw = import.meta.env?.VITE_API_BASE_URL || 'https://gtimeconnect.onrender.com'
+const API_BASE = _raw.replace(/\/api\/?$/, '').replace(/\/$/, '')
 
 // Resolve relative image paths from the API to full URLs
 const resolveImage = (raw) => {
@@ -53,8 +55,8 @@ export function useOrders() {
     try {
       const token = localStorage.getItem('token')
 
-      // Tries the agent-specific endpoint first, falls back to the general bookings list
-      const res = await fetch(`${API_BASE}/api/v1/booking/agent`, {
+      // ✅ Correct endpoint from API docs: /api/v1/agent-bookings
+      const res = await fetch(`${API_BASE}/api/v1/agent-bookings`, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
