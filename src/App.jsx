@@ -16,6 +16,11 @@ import UserSidebar        from './Components/Users/Dashboard/Navbar'
 import AgentOrdersPage    from './Components/Agents/Bookings/AgentOrders'
 import Settings           from './Components/Users/Settings/Setting'
 
+// ── Admin imports ─────────────────────────────────────────────────────────────
+import AdminSidebar       from './Components/Admin/component/Navbar'        // your Navbar.jsx
+import AdminPageContent   from './Components/Admin/component/PageContent'   // your PageContent.jsx
+import { PAGES }          from './Components/Admin/component/NavConfig'     // your NavConfig.js
+
 const NAV_W = 260
 
 // ── Route map shared by all agent layouts ─────────────────────────────────────
@@ -26,7 +31,7 @@ const AGENT_ROUTE_MAP = {
   'Create a Listing': '/create-listing',
   'Wallet':           '/wallet',
   'My Profile':       '/agent-profile',
-  'Settings':         '/settings',       // ← added
+  'Settings':         '/settings',
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -43,20 +48,47 @@ const isAuthenticated = () => {
   } catch { return false }
 }
 
+const isAdmin = () => {
+  try { return getUser().userType === 'admin' } catch { return false }
+}
+
 const getRedirectPath = () => {
   try {
     const user = getUser()
     if (!isAuthenticated()) return '/'
-    return user.userType === 'agent' ? '/agent-dashboard' : '/dashboard'
+    if (user.userType === 'admin')  return '/admin'
+    if (user.userType === 'agent')  return '/agent-dashboard'
+    return '/dashboard'
   } catch { return '/' }
 }
 
 // ── Protected Route ───────────────────────────────────────────────────────────
 
-function ProtectedRoute({ children, agentOnly = false }) {
+function ProtectedRoute({ children, agentOnly = false, adminOnly = false }) {
   if (!isAuthenticated()) return <Navigate to="/" replace />
   if (agentOnly && getUser().userType !== 'agent') return <Navigate to="/dashboard" replace />
+  if (adminOnly && !isAdmin()) return <Navigate to="/" replace />
   return children
+}
+
+// ── Admin Layout ──────────────────────────────────────────────────────────────
+
+function AdminLayout() {
+  // Default to "dashboard" page; falls back gracefully if id is unknown
+  const [activeId, setActiveId] = useState('dashboard')
+
+  const page = PAGES[activeId] ?? {
+    title: 'Page',
+    subtitle: '',
+    emoji: '📄',
+  }
+
+  return (
+    <div style={{ display: 'flex', minHeight: '100vh' }}>
+      <AdminSidebar activeId={activeId} onSelect={setActiveId} />
+      <AdminPageContent activeId={activeId} page={page} />
+    </div>
+  )
 }
 
 // ── Agent Layout ──────────────────────────────────────────────────────────────
@@ -117,7 +149,6 @@ function SettingsLayout() {
     )
   }
 
-  // Regular user — uses the user sidebar (Navbar.jsx)
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
       <UserSidebar mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
@@ -152,6 +183,9 @@ function App() {
           path="/"
           element={isAuthenticated() ? <Navigate to={getRedirectPath()} replace /> : <LandingPage />}
         />
+
+        {/* ── Admin routes (no auth required for now — add ProtectedRoute adminOnly later) ── */}
+        <Route path="/admin" element={<AdminLayout />} />
 
         {/* ── User routes ── */}
         <Route path="/dashboard"      element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
