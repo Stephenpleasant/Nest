@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Calendar, Clock, MapPin, CheckCircle, AlertCircle, RefreshCw, User, Phone, Mail, Search, TrendingUp } from "lucide-react";
+import { Calendar, Clock, MapPin, CheckCircle, AlertCircle, XCircle, RefreshCw, User, Phone, Mail, Search, TrendingUp } from "lucide-react";
 
 // ── Constants ──────────────────────────────────────────────────────────────
 const BLUE   = "#1a56db";
@@ -25,15 +25,24 @@ const resolveImg = (url) => {
 };
 
 const STATUS = {
-  pending:   { bg:"#fffbeb", color:"#92400e", border:"#fde68a", dot:"#f59e0b", label:"Pending"   },
-  confirmed: { bg:"#ecfdf5", color:"#065f46", border:"#a7f3d0", dot:"#10b981", label:"Confirmed" },
-  disputed:  { bg:"#fff1f2", color:"#9f1239", border:"#fecdd3", dot:"#f43f5e", label:"Disputed"  },
-  cancelled: { bg:"#f8fafc", color:"#475569", border:"#e2e8f0", dot:"#94a3b8", label:"Cancelled" },
+  pending:        { bg:"#fffbeb", color:"#92400e", border:"#fde68a", dot:"#f59e0b", label:"Pending"         },
+  agent_confirmed:{ bg:"#eff6ff", color:"#1d4ed8", border:"#bfdbfe", dot:"#3b82f6", label:"Agent Confirmed" },
+  user_confirmed: { bg:"#ecfdf5", color:"#065f46", border:"#a7f3d0", dot:"#10b981", label:"Confirmed"       },
+  disputed:       { bg:"#fff1f2", color:"#9f1239", border:"#fecdd3", dot:"#f43f5e", label:"Disputed"        },
+  cancelled:      { bg:"#f8fafc", color:"#475569", border:"#e2e8f0", dot:"#94a3b8", label:"Cancelled"       },
 };
 
 const mapBooking = (b) => {
   const s = (b.status || "pending").toLowerCase();
-  const status = s.includes("confirm") ? "confirmed" : s.includes("cancel") ? "cancelled" : s.includes("disput") ? "disputed" : "pending";
+  // Use the actual boolean fields from the API
+  const status =
+    (b.userConfirmed === true)
+      ? "user_confirmed"                          // both confirmed, money released
+    : (b.agentConfirmed === true || s === "agent_confirmed" || s === "agent confirmed" || s === "confirmed")
+      ? "agent_confirmed"                         // agent confirmed, waiting for user
+    : s.includes("cancel") ? "cancelled"
+    : s.includes("disput") ? "disputed"
+    : "pending";
   const img = resolveImg(b.property?.images?.[0] || b.property?.image || b.propertyId?.images?.[0] || b.propertyId?.image || b.propertyImage || b.image || "");
   return {
     _id:     b._id || b.id || String(Date.now()),
@@ -45,11 +54,7 @@ const mapBooking = (b) => {
     phone:   b.userId?.phone    || b.user?.phone  || b.clientPhone   || "",
     date:    b.bookedDate || b.inspectionDate || b.date || "",
     time:    b.startTime  || b.time || "",
-    price:   b.amount || b.price
-             || b.property?.price  || b.property?.amount
-             || b.propertyId?.price || b.propertyId?.amount
-             || b.propertyId?.rentPrice || b.propertyId?.salePrice
-             || 0,
+    price:   b.inspectionFee || b.inspection_fee || b.bookingFee || b.fee || b.amount || 0,
     type:    (b.property?.purpose || b.propertyId?.purpose) === "sale" ? "sale" : "rent",
     bookedAt:b.createdAt || b.bookedAt || new Date().toISOString(),
     status,
@@ -71,7 +76,15 @@ function useAgentOrders() {
       if (!res.ok) throw new Error(`Server returned ${res.status}`);
       const data = await res.json();
       const raw = Array.isArray(data.data) ? data.data : [];
-      setOrders(raw.map(mapBooking));
+      const mapped = raw.map(mapBooking);
+      // localStorage fallback: if agentConfirmed not yet reflected by API, apply locally
+      const agentConfirmedIds = JSON.parse(localStorage.getItem("nestfind_agent_confirmed_ids") || "[]");
+      const withOverrides = mapped.map(b =>
+        (agentConfirmedIds.includes(b._id) && b.status === "pending")
+          ? { ...b, status: "agent_confirmed" }
+          : b
+      );
+      setOrders(withOverrides);
     } catch (e) { setError(e.message || "Could not load orders"); }
     finally { setLoading(false); }
   }, []);
@@ -79,19 +92,25 @@ function useAgentOrders() {
   useEffect(() => { fetch_(); }, [fetch_]);
 
   const updateStatus = async (id, newStatus) => {
+    // Remove from list if deleted
+    if (newStatus === "__deleted__") { setOrders(prev => prev.filter(o => o._id !== id)); return; }
     // Optimistic update — UI responds instantly
     setOrders(prev => prev.map(o => o._id === id ? { ...o, status: newStatus } : o));
     try {
       const token   = localStorage.getItem("token");
       const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
 
-      if (newStatus === "confirmed") {
-        // ✅ Confirmed endpoint from Postman: PATCH /api/v1/escrow/confirm-agent/:id
+      if (newStatus === "agent_confirmed") {
+        // ✅ Agent confirm endpoint: PATCH /api/v1/escrow/confirm-agent/:id
         const res = await fetch(`${API_BASE}/api/v1/escrow/confirm-agent/${id}`, {
           method: "PATCH", headers,
         });
-        if (!res.ok) throw new Error(`Confirm failed: ${res.status}`);
-        console.log("[updateStatus] ✅ confirmed via /escrow/confirm-agent");
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok && json.success !== true) throw new Error(`Confirm failed: ${res.status}`);
+        // Persist to localStorage — API returns data:null so we track locally
+        const ids = JSON.parse(localStorage.getItem("nestfind_agent_confirmed_ids") || "[]");
+        if (!ids.includes(id)) { ids.push(id); localStorage.setItem("nestfind_agent_confirmed_ids", JSON.stringify(ids)); }
+        console.log("[updateStatus] ✅ agent_confirmed via /escrow/confirm-agent");
       } else {
         // For disputed / cancelled — try generic booking status update
         const res = await fetch(`${API_BASE}/api/v1/booking/${id}/status`, {
@@ -125,6 +144,20 @@ function Avatar({ name, size = 38 }) {
 // ── Booking Card ────────────────────────────────────────────────────────────
 function BookingCard({ order, onUpdateStatus, index }) {
   const [busy, setBusy] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!window.confirm("Are you sure you want to delete this booking?")) return;
+    setDeleting(true);
+    try {
+      const token = localStorage.getItem("token");
+      await fetch(`${API_BASE}/api/v1/booking/${order._id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      });
+      await onUpdateStatus(order._id, "__deleted__");
+    } catch { setDeleting(false); alert("Could not delete booking. Please try again."); }
+  };
   const cfg = STATUS[order.status] || STATUS.pending;
   const img = order.image;
 
@@ -195,7 +228,7 @@ function BookingCard({ order, onUpdateStatus, index }) {
             {/* Price on the right of client row */}
             <div style={{ marginLeft: "auto", textAlign: "right", flexShrink: 0 }}>
               <p style={{ fontSize: 15, fontWeight: 800, color: BLUE, fontFamily: "Poppins,sans-serif", margin: 0 }}>{formatPrice(order.price)}</p>
-              <p style={{ fontSize: 10, color: "#94a3b8", margin: 0 }}>{order.type === "rent" ? "per year" : "asking"}</p>
+              <p style={{ fontSize: 10, color: "#94a3b8", margin: 0 }}>inspection fee</p>
             </div>
           </div>
 
@@ -221,17 +254,22 @@ function BookingCard({ order, onUpdateStatus, index }) {
             <div style={{ display: "flex", gap: 8 }}>
               {order.status === "pending" && (
                 <>
-                  <button onClick={() => act("confirmed")} disabled={busy} className="act-btn" style={{ display: "flex", alignItems: "center", gap: 5, padding: "8px 16px", background: "linear-gradient(135deg,#10b981,#059669)", color: WHITE, border: "none", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 12px rgba(16,185,129,0.3)", opacity: busy ? 0.6 : 1 }}>
+                  <button onClick={() => act("agent_confirmed")} disabled={busy || deleting} className="act-btn" style={{ display: "flex", alignItems: "center", gap: 5, padding: "8px 16px", background: "linear-gradient(135deg,#10b981,#059669)", color: WHITE, border: "none", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 12px rgba(16,185,129,0.3)", opacity: busy ? 0.6 : 1 }}>
                     <CheckCircle size={13} /> Confirm
                   </button>
-                  <button onClick={() => act("disputed")} disabled={busy} className="act-btn" style={{ display: "flex", alignItems: "center", gap: 5, padding: "8px 16px", background: WHITE, color: "#ef4444", border: "1.5px solid #fecaca", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer", opacity: busy ? 0.6 : 1 }}>
+                  <button onClick={() => act("disputed")} disabled={busy || deleting} className="act-btn" style={{ display: "flex", alignItems: "center", gap: 5, padding: "8px 16px", background: WHITE, color: "#ef4444", border: "1.5px solid #fecaca", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer", opacity: busy ? 0.6 : 1 }}>
                     <AlertCircle size={13} /> Dispute
                   </button>
                 </>
               )}
-              {order.status === "confirmed" && (
+              {order.status === "agent_confirmed" && (
+                <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "8px 16px", background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe", borderRadius: 10, fontSize: 12, fontWeight: 700 }}>
+                  🔔 Awaiting User
+                </div>
+              )}
+              {order.status === "user_confirmed" && (
                 <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "8px 16px", background: "linear-gradient(135deg,#ecfdf5,#d1fae5)", color: "#065f46", border: "1px solid #a7f3d0", borderRadius: 10, fontSize: 12, fontWeight: 700 }}>
-                  <CheckCircle size={13} /> Confirmed
+                  <CheckCircle size={13} /> Completed
                 </div>
               )}
               {order.status === "disputed" && (
@@ -243,6 +281,16 @@ function BookingCard({ order, onUpdateStatus, index }) {
                 <div style={{ padding: "8px 16px", background: "#f8fafc", color: "#64748b", border: "1px solid #e2e8f0", borderRadius: 10, fontSize: 12, fontWeight: 700 }}>
                   Cancelled
                 </div>
+              )}
+              {/* Delete button — only on pending/disputed/cancelled */}
+              {(order.status === "pending" || order.status === "disputed" || order.status === "cancelled") && (
+                <button onClick={handleDelete} disabled={deleting || busy} className="act-btn"
+                  style={{ display: "flex", alignItems: "center", gap: 5, padding: "8px 16px", background: deleting ? "#9ca3af" : "#fef2f2", color: deleting ? WHITE : "#ef4444", border: "1px solid #fecaca", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: deleting ? "not-allowed" : "pointer", transition: "all .2s" }}>
+                  {deleting
+                    ? <><span style={{ width: 11, height: 11, border: "2px solid rgba(255,255,255,0.4)", borderTopColor: WHITE, borderRadius: "50%", display: "inline-block", animation: "spin .7s linear infinite" }} /> Deleting…</>
+                    : <><XCircle size={13} /> Delete</>
+                  }
+                </button>
               )}
             </div>
           </div>
@@ -259,7 +307,7 @@ export default function AgentOrdersPage() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
 
-  const FILTERS = ["all", "pending", "confirmed", "disputed", "cancelled"];
+  const FILTERS = ["all", "pending", "agent_confirmed", "user_confirmed", "disputed", "cancelled"];
 
   const filtered = orders.filter(o => {
     const matchFilter = filter === "all" || o.status === filter;
@@ -271,8 +319,8 @@ export default function AgentOrdersPage() {
   const stats = {
     total:     orders.length,
     pending:   orders.filter(o => o.status === "pending").length,
-    confirmed: orders.filter(o => o.status === "confirmed").length,
-    revenue:   orders.filter(o => o.status === "confirmed").reduce((s, o) => s + o.price, 0),
+    confirmed: orders.filter(o => o.status === "agent_confirmed" || o.status === "user_confirmed").length,
+    revenue:   orders.filter(o => o.status === "agent_confirmed" || o.status === "user_confirmed").reduce((s, o) => s + o.price, 0),
   };
 
   return (
@@ -372,7 +420,7 @@ export default function AgentOrdersPage() {
                       boxShadow: active ? `0 4px 14px rgba(26,86,219,.25)` : "none",
                       display: "flex", alignItems: "center", gap: 5 }}>
                     {!active && <div style={{ width: 6, height: 6, borderRadius: "50%", background: dot }} />}
-                    {f.charAt(0).toUpperCase() + f.slice(1)}
+                    {f === "all" ? "All" : f === "agent_confirmed" ? "Agent Confirmed" : f === "user_confirmed" ? "Confirmed" : f.charAt(0).toUpperCase() + f.slice(1)}
                     <span style={{ background: active ? "rgba(255,255,255,.25)" : "#e2e8f0", color: active ? WHITE : "#94a3b8", padding: "1px 6px", borderRadius: 100, fontSize: 10.5 }}>{cnt}</span>
                   </button>
                 );

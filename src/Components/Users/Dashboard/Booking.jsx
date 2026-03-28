@@ -35,7 +35,15 @@ const resolveImageUrl = (url) => {
 const mapBooking = (b) => {
   const s = (b.status || "pending").toLowerCase();
   let status = "Pending Confirmation";
-  if (s.includes("confirm")) status = "Confirmed";
+  // If the backend confirmed field is true, the USER has confirmed (escrow released)
+  if (b.confirmed === true)
+    status = "Confirmed";
+  else if (
+    s === "agent_confirmed" || s === "agent confirmed" ||
+    s === "confirmed" || s === "completed" || s === "done" ||
+    s.includes("agent_confirm") || s.includes("waiting for user")
+  )
+    status = "Agent Confirmed";
   else if (s.includes("cancel"))  status = "Cancelled";
   else if (s.includes("disput"))  status = "Disputed";
 
@@ -55,7 +63,7 @@ const mapBooking = (b) => {
       b.propertyId?.state  || b.property?.state,
     ].filter(Boolean).join(", ") || b.propertyAddress || "",
     agentName:  b.agentId?.fullName || b.agentId?.name || b.agent?.name || b.agentName || "Agent",
-    price:      b.propertyId?.price || b.property?.price || b.amount || b.price || 0,
+    price:      b.inspectionFee || b.inspection_fee || b.bookingFee || b.fee || b.amount || 0,
     priceType:  (b.propertyId?.purpose || b.property?.purpose) === "sale" ? "sale" : "rent",
     date:       b.bookedDate || b.inspectionDate || b.date || "",
     time:       b.startTime  || b.time || "",
@@ -66,6 +74,7 @@ const mapBooking = (b) => {
 
 const STATUS_STYLES = {
   "Pending Confirmation": { bg:"#fefce8", color:"#854d0e", border:"#fde68a" },
+  "Agent Confirmed":      { bg:"#eff6ff", color:"#1d4ed8", border:"#bfdbfe" },
   "Confirmed":            { bg:"#f0fdf4", color:"#166534", border:"#bbf7d0" },
   "Cancelled":            { bg:"#fef2f2", color:"#991b1b", border:"#fecaca" },
   "Disputed":             { bg:"#fff1f2", color:"#9f1239", border:"#fecdd3" },
@@ -156,9 +165,8 @@ const MyBookings = () => {
   };
 
   // ── Fetch bookings from API ──────────────────────────────────────────────
-  const fetchBookings = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const fetchBookings = useCallback(async (silent = false) => {
+    if (!silent) { setLoading(true); setError(null); }
     try {
       const token = localStorage.getItem("token");
       const res   = await fetch(`${API_BASE}/api/v1/booking/user-bookings`, {
@@ -182,11 +190,16 @@ const MyBookings = () => {
         return { ...b, propertyImage: freshImage || "https://placehold.co/400x300/e5e7eb/6b7280?text=Property" };
       }));
 
-      setBookings(repaired);
+      // Override status for bookings user has already confirmed (localStorage fallback)
+      const confirmedIds = JSON.parse(localStorage.getItem("nestfind_confirmed_ids") || "[]");
+      const final = repaired.map(b =>
+        (b.confirmed === true || confirmedIds.includes(b.id)) ? { ...b, status: "Confirmed" } : b
+      );
+      setBookings(final);
     } catch (e) {
-      setError(e.message || "Could not load bookings");
+      if (!silent) setError(e.message || "Could not load bookings");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 
@@ -199,6 +212,9 @@ const MyBookings = () => {
       if (pending) { setSuccessBooking(pending); localStorage.removeItem("nestfind_pending_booking"); }
       setPaymentSuccess(true);
       window.history.replaceState({}, "", window.location.pathname);
+      // Fetch in background silently — do not let a 401 error destroy the success modal
+      fetchBookings(true).catch(() => {});
+      return;
     }
     fetchBookings();
   }, [fetchBookings]);
@@ -215,17 +231,47 @@ const MyBookings = () => {
     } catch { /* keep optimistic update */ }
   };
 
-  // ── User confirms inspection (releases escrow funds) ─────────────────────
-  const confirmInspection = async (id) => {
-    setBookings(prev => prev.map(b => b.id === id ? { ...b, status:"Confirmed" } : b));
+  // ── Delete booking ───────────────────────────────────────────────────────
+  const deleteBooking = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this booking? This cannot be undone.")) return;
+    setBookings(prev => prev.map(b => b.id === id ? { ...b, deleting: true } : b));
     try {
       const token = localStorage.getItem("token");
-      // Postman: PATCH /api/v1/escrow/confirm-user/:id  (User confirm inspection to release funds)
-      await fetch(`${API_BASE}/api/v1/escrow/confirm-user/${id}`, {
+      await fetch(`${API_BASE}/api/v1/booking/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      });
+      // Remove from list after successful delete
+      setBookings(prev => prev.filter(b => b.id !== id));
+    } catch {
+      setBookings(prev => prev.map(b => b.id === id ? { ...b, deleting: false } : b));
+      alert("Could not delete booking. Please try again.");
+    }
+  };
+
+  // ── User confirms inspection (releases escrow funds) ─────────────────────
+  const confirmInspection = async (id) => {
+    // Disable button immediately to prevent double-click
+    setBookings(prev => prev.map(b => b.id === id ? { ...b, confirming: true } : b));
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_BASE}/api/v1/escrow/confirm-user/${id}`, {
         method: "PATCH",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       });
-    } catch { /* keep optimistic update */ }
+      const json = await res.json().catch(() => ({}));
+      // API returns { success: true, data: null } — check success field OR status 200
+      if (!res.ok && json.success !== true) throw new Error("Failed");
+      // Persist to localStorage so refresh always remembers
+      const ids = JSON.parse(localStorage.getItem("nestfind_confirmed_ids") || "[]");
+      if (!ids.includes(id)) { ids.push(id); localStorage.setItem("nestfind_confirmed_ids", JSON.stringify(ids)); }
+      // Mark as Confirmed locally
+      setBookings(prev => prev.map(b => b.id === id ? { ...b, status: "Confirmed", confirming: false } : b));
+    } catch {
+      // Roll back — let user try again
+      setBookings(prev => prev.map(b => b.id === id ? { ...b, confirming: false } : b));
+      alert("Could not confirm inspection. Please try again.");
+    }
   };
 
   return (
@@ -250,7 +296,8 @@ const MyBookings = () => {
         @media (min-width:640px) { .booking-padding { padding:32px 28px 80px!important; } }
         @media (min-width:1024px) { .booking-padding { padding:44px 52px 80px!important; } }
         .stats-grid { grid-template-columns:1fr!important; }
-        @media (min-width:480px) { .stats-grid { grid-template-columns:repeat(3,1fr)!important; } }
+        @media (min-width:480px) { .stats-grid { grid-template-columns:repeat(2,1fr)!important; } }
+        @media (min-width:900px) { .stats-grid { grid-template-columns:repeat(4,1fr)!important; } }
         .booking-card-inner { flex-direction:column!important; }
         @media (min-width:600px) { .booking-card-inner { flex-direction:row!important; } }
         .booking-img { width:100%!important;height:180px!important; }
@@ -321,9 +368,10 @@ const MyBookings = () => {
             {!loading && !error && (
               <div className="stats-grid" style={{ display:"grid",gap:16,marginBottom:30 }}>
                 {[
-                  { label:"Total Bookings", value:bookings.length,                                                          icon:"📋", color:BLUE,      bg:"linear-gradient(135deg,#eff6ff,#dbeafe)" },
-                  { label:"Pending",        value:bookings.filter(b=>b.status==="Pending Confirmation").length,             icon:"⏳", color:"#d97706", bg:"linear-gradient(135deg,#fffbeb,#fef3c7)" },
-                  { label:"Confirmed",      value:bookings.filter(b=>b.status==="Confirmed").length,                        icon:"✅", color:"#16a34a", bg:"linear-gradient(135deg,#f0fdf4,#dcfce7)" },
+                  { label:"Total Bookings",   value:bookings.length,                                                                                         icon:"📋", color:BLUE,      bg:"linear-gradient(135deg,#eff6ff,#dbeafe)" },
+                  { label:"Pending",          value:bookings.filter(b=>b.status==="Pending Confirmation").length,                                            icon:"⏳", color:"#d97706", bg:"linear-gradient(135deg,#fffbeb,#fef3c7)" },
+                  { label:"Agent Confirmed",  value:bookings.filter(b=>b.status==="Agent Confirmed").length,                                                 icon:"🔔", color:"#1d4ed8", bg:"linear-gradient(135deg,#eff6ff,#bfdbfe)" },
+                  { label:"Completed",        value:bookings.filter(b=>b.status==="Confirmed").length,                                                       icon:"✅", color:"#16a34a", bg:"linear-gradient(135deg,#f0fdf4,#dcfce7)" },
                 ].map(({ label,value,icon,color,bg }) => (
                   <div key={label} className="stat-card" style={{ background:WHITE,borderRadius:18,padding:"20px 24px",boxShadow:"0 4px 18px rgba(0,0,0,0.07)",border:"1px solid rgba(255,255,255,0.85)",display:"flex",alignItems:"center",gap:16,position:"relative",overflow:"hidden" }}>
                     <div style={{ position:"absolute",right:-20,top:-20,width:90,height:90,borderRadius:"50%",background:bg,opacity:0.65 }}/>
@@ -402,7 +450,7 @@ const MyBookings = () => {
                               </div>
                               <div style={{ display:"flex",alignItems:"center",gap:5,background:"#eff6ff",border:"1px solid #bfdbfe",padding:"5px 11px",borderRadius:9 }}>
                                 <span style={{ fontSize:13,fontWeight:800,color:BLUE,fontFamily:"Poppins,sans-serif" }}>{formatPrice(booking.price)}</span>
-                                <span style={{ fontSize:10.5,color:"#60a5fa" }}>{booking.priceType==="rent"?"/ yr":" asking"}</span>
+                                <span style={{ fontSize:10.5,color:"#60a5fa" }}>inspection fee</span>
                               </div>
                             </div>
 
@@ -411,25 +459,63 @@ const MyBookings = () => {
                                 Booked on {new Date(booking.bookedAt).toLocaleDateString("en-GB",{ day:"numeric",month:"short",year:"numeric" })}
                               </span>
                               <div style={{ display:"flex",gap:8,flexWrap:"wrap" }}>
+                                {/* Status badges */}
                                 {booking.status==="Pending Confirmation" && (
-                                  <button className="action-btn" onClick={()=>cancelBooking(booking.id)} style={{ display:"flex",alignItems:"center",gap:5,padding:"7px 14px",background:"#fef2f2",color:"#ef4444",border:"1px solid #fecaca",borderRadius:9,fontSize:12,fontWeight:700,cursor:"pointer" }}>
-                                    <XCircle size={13}/> Cancel
-                                  </button>
+                                  <span style={{ display:"flex",alignItems:"center",gap:5,padding:"7px 14px",background:"#fefce8",color:"#854d0e",border:"1px solid #fde68a",borderRadius:9,fontSize:12,fontWeight:700 }}>
+                                    ⏳ Awaiting Agent
+                                  </span>
                                 )}
-                                {booking.status==="Pending Confirmation" && (
-                                  <button className="action-btn" onClick={()=>confirmInspection(booking.id)} style={{ display:"flex",alignItems:"center",gap:5,padding:"7px 14px",background:"#f0fdf4",color:"#16a34a",border:"1px solid #bbf7d0",borderRadius:9,fontSize:12,fontWeight:700,cursor:"pointer" }}>
-                                    <CheckCircle size={13}/> Confirm Inspection
-                                  </button>
+                                {booking.status==="Agent Confirmed" && (
+                                  <span style={{ display:"flex",alignItems:"center",gap:5,padding:"7px 14px",background:"#eff6ff",color:"#1d4ed8",border:"1px solid #bfdbfe",borderRadius:9,fontSize:12,fontWeight:700 }}>
+                                    🔔 Agent Accepted
+                                  </span>
                                 )}
                                 {booking.status==="Confirmed" && (
                                   <span style={{ display:"flex",alignItems:"center",gap:5,padding:"7px 14px",background:"#f0fdf4",color:"#16a34a",border:"1px solid #bbf7d0",borderRadius:9,fontSize:12,fontWeight:700 }}>
                                     <CheckCircle size={13}/> Inspection Done
                                   </span>
                                 )}
+
+                                {/* ── Always-visible Confirm button ── */}
+                                {booking.status !== "Confirmed" && (
+                                  <button
+                                    className="action-btn"
+                                    onClick={()=>confirmInspection(booking.id)}
+                                    disabled={booking.confirming}
+                                    style={{ display:"flex",alignItems:"center",gap:5,padding:"7px 14px",background:booking.confirming?"#9ca3af":"linear-gradient(135deg,#16a34a,#15803d)",color:"#fff",border:"none",borderRadius:9,fontSize:12,fontWeight:700,cursor:booking.confirming?"not-allowed":"pointer",boxShadow:booking.confirming?"none":"0 4px 12px rgba(22,163,74,0.35)",transition:"all .2s" }}>
+                                    {booking.confirming
+                                      ? <><span style={{width:11,height:11,border:"2px solid rgba(255,255,255,0.4)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin .7s linear infinite"}}/> Confirming…</>
+                                      : <><CheckCircle size={13}/> Confirm</>
+                                    }
+                                  </button>
+                                )}
+
+                                {/* ── Always-visible Delete button (hidden when Confirmed) ── */}
+                                {booking.status !== "Confirmed" && (
+                                <button
+                                  className="action-btn"
+                                  onClick={()=>deleteBooking(booking.id)}
+                                  disabled={booking.deleting}
+                                  style={{ display:"flex",alignItems:"center",gap:5,padding:"7px 14px",background:booking.deleting?"#9ca3af":"#fef2f2",color:booking.deleting?"#fff":"#ef4444",border:"1px solid #fecaca",borderRadius:9,fontSize:12,fontWeight:700,cursor:booking.deleting?"not-allowed":"pointer",transition:"all .2s" }}>
+                                  {booking.deleting
+                                    ? <><span style={{width:11,height:11,border:"2px solid rgba(255,255,255,0.4)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin .7s linear infinite"}}/> Deleting…</>
+                                    : <><XCircle size={13}/> Delete</>
+                                  }
+                                </button>
+                                )}
                               </div>
                             </div>
                           </div>
                         </div>
+                        {/* Action-required banner for Agent Confirmed */}
+                        {booking.status==="Agent Confirmed" && (
+                          <div style={{ background:"linear-gradient(135deg,#eff6ff,#dbeafe)",borderTop:"1px solid #bfdbfe",padding:"10px 20px",display:"flex",alignItems:"center",gap:10 }}>
+                            <span style={{ fontSize:18 }}>🔔</span>
+                            <p style={{ fontSize:12.5,color:"#1d4ed8",fontWeight:700,margin:0 }}>
+                              Action Required — The agent has confirmed your inspection. Click <strong>"Confirm"</strong> after your inspection takes place to release the agent's fee.
+                            </p>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
