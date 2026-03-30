@@ -10,7 +10,6 @@ const MONTHS = ["January","February","March","April","May","June","July","August
 function formatDateLabel(dateStr) {
   if (!dateStr) return "";
   try {
-    // Handle both "YYYY-MM-DD" and ISO strings
     const d = new Date(dateStr);
     if (!isNaN(d)) return `${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
     const [y,m,dd] = dateStr.split("-").map(Number);
@@ -34,21 +33,22 @@ const resolveImageUrl = (url) => {
 // Map a raw API booking to a consistent shape
 const mapBooking = (b) => {
   const s = (b.status || "pending").toLowerCase();
+
+  // Drive status from the actual boolean fields the API returns
   let status = "Pending Confirmation";
-  // If the backend confirmed field is true, the USER has confirmed (escrow released)
-  if (b.confirmed === true)
-    status = "Confirmed";
-  else if (
-    s === "agent_confirmed" || s === "agent confirmed" ||
-    s === "confirmed" || s === "completed" || s === "done" ||
-    s.includes("agent_confirm") || s.includes("waiting for user")
-  )
-    status = "Agent Confirmed";
-  else if (s.includes("cancel"))  status = "Cancelled";
-  else if (s.includes("disput"))  status = "Disputed";
+  if (b.userConfirmed === true || s === "completed")
+    status = "Confirmed";           // both confirmed — escrow released
+  else if (b.agentConfirmed === true)
+    status = "Agent Confirmed";     // agent confirmed, waiting for user
+  else if (s.includes("cancel"))
+    status = "Cancelled";
+  else if (s.includes("disput"))
+    status = "Disputed";
 
   return {
     id:             b._id || b.id,
+    agentConfirmed: b.agentConfirmed === true,
+    userConfirmed:  b.userConfirmed  === true,
     propertyId:     b.propertyId?._id || b.propertyId?.id || b.property?._id || b.propertyId || "",
     propertyTitle:  b.propertyId?.title  || b.property?.title  || b.propertyTitle || b.title || "Property",
     propertyImage:  resolveImageUrl(
@@ -139,7 +139,6 @@ const MyBookings = () => {
   const [paymentSuccess,setPaymentSuccess]= useState(false);
   const [successBooking,setSuccessBooking]= useState(null);
 
-  // ── Re-fetch property image if missing ───────────────────────────────────
   const fetchPropertyImage = async (propertyId, token) => {
     try {
       const res  = await fetch(`${API_BASE}/api/v1/properties/details/${propertyId}`, {
@@ -164,7 +163,6 @@ const MyBookings = () => {
            l.includes("/images/") || l.includes("/uploads/") || l.includes("/media/");
   };
 
-  // ── Fetch bookings from API ──────────────────────────────────────────────
   const fetchBookings = useCallback(async (silent = false) => {
     if (!silent) { setLoading(true); setError(null); }
     try {
@@ -174,26 +172,23 @@ const MyBookings = () => {
       });
       if (!res.ok) throw new Error(`Server returned ${res.status}`);
       const json = await res.json();
-      // Response shape: { success, data: [...] }
       const raw = Array.isArray(json.data) ? json.data
                 : Array.isArray(json.bookings) ? json.bookings
                 : Array.isArray(json) ? json : [];
 
-      // Map first, then repair missing images in parallel
       const mapped = raw.map(mapBooking);
       const repaired = await Promise.all(mapped.map(async (b) => {
         if (isValidImage(b.propertyImage)) return b;
-        // Image missing — fetch from property details endpoint
         const freshImage = b.propertyId
           ? await fetchPropertyImage(b.propertyId, token)
           : null;
         return { ...b, propertyImage: freshImage || "https://placehold.co/400x300/e5e7eb/6b7280?text=Property" };
       }));
 
-      // Override status for bookings user has already confirmed (localStorage fallback)
+      // localStorage fallback: if user already confirmed, keep Confirmed on refresh
       const confirmedIds = JSON.parse(localStorage.getItem("nestfind_confirmed_ids") || "[]");
       const final = repaired.map(b =>
-        (b.confirmed === true || confirmedIds.includes(b.id)) ? { ...b, status: "Confirmed" } : b
+        (b.userConfirmed === true || confirmedIds.includes(b.id)) ? { ...b, status: "Confirmed", userConfirmed: true } : b
       );
       setBookings(final);
     } catch (e) {
@@ -204,7 +199,6 @@ const MyBookings = () => {
   }, []);
 
   useEffect(() => {
-    // Handle Paystack redirect with ?trxref= or ?reference=
     const params  = new URLSearchParams(window.location.search);
     const trxref  = params.get("trxref") || params.get("reference");
     if (trxref) {
@@ -212,14 +206,12 @@ const MyBookings = () => {
       if (pending) { setSuccessBooking(pending); localStorage.removeItem("nestfind_pending_booking"); }
       setPaymentSuccess(true);
       window.history.replaceState({}, "", window.location.pathname);
-      // Fetch in background silently — do not let a 401 error destroy the success modal
       fetchBookings(true).catch(() => {});
       return;
     }
     fetchBookings();
   }, [fetchBookings]);
 
-  // ── Cancel booking (optimistic, then API) ────────────────────────────────
   const cancelBooking = async (id) => {
     setBookings(prev => prev.map(b => b.id === id ? { ...b, status:"Cancelled" } : b));
     try {
@@ -231,7 +223,6 @@ const MyBookings = () => {
     } catch { /* keep optimistic update */ }
   };
 
-  // ── Delete booking ───────────────────────────────────────────────────────
   const deleteBooking = async (id) => {
     if (!window.confirm("Are you sure you want to delete this booking? This cannot be undone.")) return;
     setBookings(prev => prev.map(b => b.id === id ? { ...b, deleting: true } : b));
@@ -241,7 +232,6 @@ const MyBookings = () => {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       });
-      // Remove from list after successful delete
       setBookings(prev => prev.filter(b => b.id !== id));
     } catch {
       setBookings(prev => prev.map(b => b.id === id ? { ...b, deleting: false } : b));
@@ -249,9 +239,7 @@ const MyBookings = () => {
     }
   };
 
-  // ── User confirms inspection (releases escrow funds) ─────────────────────
   const confirmInspection = async (id) => {
-    // Disable button immediately to prevent double-click
     setBookings(prev => prev.map(b => b.id === id ? { ...b, confirming: true } : b));
     try {
       const token = localStorage.getItem("token");
@@ -260,15 +248,23 @@ const MyBookings = () => {
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       });
       const json = await res.json().catch(() => ({}));
-      // API returns { success: true, data: null } — check success field OR status 200
       if (!res.ok && json.success !== true) throw new Error("Failed");
-      // Persist to localStorage so refresh always remembers
+
+      // Read real flags from API response
+      const { agentConfirmed, userConfirmed, bookingStatus } = json.data || {};
+      const resolvedStatus =
+        bookingStatus === "completed" || userConfirmed === true ? "Confirmed" : "Agent Confirmed";
+
+      // Persist to localStorage so refresh remembers
       const ids = JSON.parse(localStorage.getItem("nestfind_confirmed_ids") || "[]");
       if (!ids.includes(id)) { ids.push(id); localStorage.setItem("nestfind_confirmed_ids", JSON.stringify(ids)); }
-      // Mark as Confirmed locally
-      setBookings(prev => prev.map(b => b.id === id ? { ...b, status: "Confirmed", confirming: false } : b));
+
+      setBookings(prev => prev.map(b =>
+        b.id === id
+          ? { ...b, status: resolvedStatus, agentConfirmed: agentConfirmed ?? b.agentConfirmed, userConfirmed: true, confirming: false }
+          : b
+      ));
     } catch {
-      // Roll back — let user try again
       setBookings(prev => prev.map(b => b.id === id ? { ...b, confirming: false } : b));
       alert("Could not confirm inspection. Please try again.");
     }
@@ -368,10 +364,10 @@ const MyBookings = () => {
             {!loading && !error && (
               <div className="stats-grid" style={{ display:"grid",gap:16,marginBottom:30 }}>
                 {[
-                  { label:"Total Bookings",   value:bookings.length,                                                                                         icon:"📋", color:BLUE,      bg:"linear-gradient(135deg,#eff6ff,#dbeafe)" },
-                  { label:"Pending",          value:bookings.filter(b=>b.status==="Pending Confirmation").length,                                            icon:"⏳", color:"#d97706", bg:"linear-gradient(135deg,#fffbeb,#fef3c7)" },
-                  { label:"Agent Confirmed",  value:bookings.filter(b=>b.status==="Agent Confirmed").length,                                                 icon:"🔔", color:"#1d4ed8", bg:"linear-gradient(135deg,#eff6ff,#bfdbfe)" },
-                  { label:"Completed",        value:bookings.filter(b=>b.status==="Confirmed").length,                                                       icon:"✅", color:"#16a34a", bg:"linear-gradient(135deg,#f0fdf4,#dcfce7)" },
+                  { label:"Total Bookings",  value:bookings.length,                                              icon:"📋", color:BLUE,      bg:"linear-gradient(135deg,#eff6ff,#dbeafe)" },
+                  { label:"Pending",         value:bookings.filter(b=>b.status==="Pending Confirmation").length, icon:"⏳", color:"#d97706", bg:"linear-gradient(135deg,#fffbeb,#fef3c7)" },
+                  { label:"Agent Confirmed", value:bookings.filter(b=>b.status==="Agent Confirmed").length,      icon:"🔔", color:"#1d4ed8", bg:"linear-gradient(135deg,#eff6ff,#bfdbfe)" },
+                  { label:"Completed",       value:bookings.filter(b=>b.status==="Confirmed").length,            icon:"✅", color:"#16a34a", bg:"linear-gradient(135deg,#f0fdf4,#dcfce7)" },
                 ].map(({ label,value,icon,color,bg }) => (
                   <div key={label} className="stat-card" style={{ background:WHITE,borderRadius:18,padding:"20px 24px",boxShadow:"0 4px 18px rgba(0,0,0,0.07)",border:"1px solid rgba(255,255,255,0.85)",display:"flex",alignItems:"center",gap:16,position:"relative",overflow:"hidden" }}>
                     <div style={{ position:"absolute",right:-20,top:-20,width:90,height:90,borderRadius:"50%",background:bg,opacity:0.65 }}/>
@@ -459,6 +455,7 @@ const MyBookings = () => {
                                 Booked on {new Date(booking.bookedAt).toLocaleDateString("en-GB",{ day:"numeric",month:"short",year:"numeric" })}
                               </span>
                               <div style={{ display:"flex",gap:8,flexWrap:"wrap" }}>
+
                                 {/* Status badges */}
                                 {booking.status==="Pending Confirmation" && (
                                   <span style={{ display:"flex",alignItems:"center",gap:5,padding:"7px 14px",background:"#fefce8",color:"#854d0e",border:"1px solid #fde68a",borderRadius:9,fontSize:12,fontWeight:700 }}>
@@ -476,8 +473,8 @@ const MyBookings = () => {
                                   </span>
                                 )}
 
-                                {/* ── Always-visible Confirm button ── */}
-                                {booking.status !== "Confirmed" && (
+                                {/* Confirm button — only when agentConfirmed=true and userConfirmed=false */}
+                                {booking.agentConfirmed && !booking.userConfirmed && (
                                   <button
                                     className="action-btn"
                                     onClick={()=>confirmInspection(booking.id)}
@@ -485,34 +482,36 @@ const MyBookings = () => {
                                     style={{ display:"flex",alignItems:"center",gap:5,padding:"7px 14px",background:booking.confirming?"#9ca3af":"linear-gradient(135deg,#16a34a,#15803d)",color:"#fff",border:"none",borderRadius:9,fontSize:12,fontWeight:700,cursor:booking.confirming?"not-allowed":"pointer",boxShadow:booking.confirming?"none":"0 4px 12px rgba(22,163,74,0.35)",transition:"all .2s" }}>
                                     {booking.confirming
                                       ? <><span style={{width:11,height:11,border:"2px solid rgba(255,255,255,0.4)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin .7s linear infinite"}}/> Confirming…</>
-                                      : <><CheckCircle size={13}/> Confirm</>
+                                      : <><CheckCircle size={13}/> Confirm Inspection</>
                                     }
                                   </button>
                                 )}
 
-                                {/* ── Always-visible Delete button (hidden when Confirmed) ── */}
-                                {booking.status !== "Confirmed" && (
-                                <button
-                                  className="action-btn"
-                                  onClick={()=>deleteBooking(booking.id)}
-                                  disabled={booking.deleting}
-                                  style={{ display:"flex",alignItems:"center",gap:5,padding:"7px 14px",background:booking.deleting?"#9ca3af":"#fef2f2",color:booking.deleting?"#fff":"#ef4444",border:"1px solid #fecaca",borderRadius:9,fontSize:12,fontWeight:700,cursor:booking.deleting?"not-allowed":"pointer",transition:"all .2s" }}>
-                                  {booking.deleting
-                                    ? <><span style={{width:11,height:11,border:"2px solid rgba(255,255,255,0.4)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin .7s linear infinite"}}/> Deleting…</>
-                                    : <><XCircle size={13}/> Delete</>
-                                  }
-                                </button>
+                                {/* Delete button — only on pending/disputed/cancelled */}
+                                {(booking.status==="Pending Confirmation" || booking.status==="Disputed" || booking.status==="Cancelled") && (
+                                  <button
+                                    className="action-btn"
+                                    onClick={()=>deleteBooking(booking.id)}
+                                    disabled={booking.deleting}
+                                    style={{ display:"flex",alignItems:"center",gap:5,padding:"7px 14px",background:booking.deleting?"#9ca3af":"#fef2f2",color:booking.deleting?"#fff":"#ef4444",border:"1px solid #fecaca",borderRadius:9,fontSize:12,fontWeight:700,cursor:booking.deleting?"not-allowed":"pointer",transition:"all .2s" }}>
+                                    {booking.deleting
+                                      ? <><span style={{width:11,height:11,border:"2px solid rgba(255,255,255,0.4)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin .7s linear infinite"}}/> Deleting…</>
+                                      : <><XCircle size={13}/> Delete</>
+                                    }
+                                  </button>
                                 )}
+
                               </div>
                             </div>
                           </div>
                         </div>
-                        {/* Action-required banner for Agent Confirmed */}
-                        {booking.status==="Agent Confirmed" && (
+
+                        {/* Action banner — only when agentConfirmed=true and userConfirmed=false */}
+                        {booking.agentConfirmed && !booking.userConfirmed && (
                           <div style={{ background:"linear-gradient(135deg,#eff6ff,#dbeafe)",borderTop:"1px solid #bfdbfe",padding:"10px 20px",display:"flex",alignItems:"center",gap:10 }}>
                             <span style={{ fontSize:18 }}>🔔</span>
                             <p style={{ fontSize:12.5,color:"#1d4ed8",fontWeight:700,margin:0 }}>
-                              Action Required — The agent has confirmed your inspection. Click <strong>"Confirm"</strong> after your inspection takes place to release the agent's fee.
+                              Action Required — The agent has confirmed your inspection. Click <strong>"Confirm Inspection"</strong> after your inspection takes place to release the agent's fee.
                             </p>
                           </div>
                         )}

@@ -26,7 +26,7 @@ const resolveImg = (url) => {
 
 const STATUS = {
   pending:        { bg:"#fffbeb", color:"#92400e", border:"#fde68a", dot:"#f59e0b", label:"Pending"         },
-  agent_confirmed:{ bg:"#eff6ff", color:"#1d4ed8", border:"#bfdbfe", dot:"#3b82f6", label:"Agent Confirmed" },
+  agent_confirmed:{ bg:"#eff6ff", color:"#1d4ed8", border:"#bfdbfe", dot:"#3b82f6", label:"Awaiting User"   },
   user_confirmed: { bg:"#ecfdf5", color:"#065f46", border:"#a7f3d0", dot:"#10b981", label:"Confirmed"       },
   disputed:       { bg:"#fff1f2", color:"#9f1239", border:"#fecdd3", dot:"#f43f5e", label:"Disputed"        },
   cancelled:      { bg:"#f8fafc", color:"#475569", border:"#e2e8f0", dot:"#94a3b8", label:"Cancelled"       },
@@ -34,18 +34,35 @@ const STATUS = {
 
 const mapBooking = (b) => {
   const s = (b.status || "pending").toLowerCase();
-  // Use the actual boolean fields from the API
+
+  // Debug — open browser console to see what the API actually sends
+  console.log("[mapBooking] raw:", { _id: b._id, status: b.status, agentConfirmed: b.agentConfirmed, userConfirmed: b.userConfirmed });
+
+  // Priority:
+  // 1. cancelled / disputed — trust status string
+  // 2. status === "completed" → fully done (payment released)
+  // 3. userConfirmed true (user confirmed inspection) → agent needs to Accept/Dispute/Delete
+  // 4. agentConfirmed true or status "confirmed" → awaiting user
+  // 5. pending
+  // "confirmed" or "completed" from API = user has confirmed inspection = fully done
+  // "agent_confirmed" = agent confirmed, waiting for user to confirm after inspection
+  // "pending" = no one confirmed yet
   const status =
-    (b.userConfirmed === true)
-      ? "user_confirmed"                          // both confirmed, money released
-    : (b.agentConfirmed === true || s === "agent_confirmed" || s === "agent confirmed" || s === "confirmed")
-      ? "agent_confirmed"                         // agent confirmed, waiting for user
-    : s.includes("cancel") ? "cancelled"
-    : s.includes("disput") ? "disputed"
+    s.includes("cancel")
+      ? "cancelled"
+    : s.includes("disput")
+      ? "disputed"
+    : (s === "completed" || s === "confirmed" || b.userConfirmed === true)
+      ? "user_confirmed"
+    : (b.agentConfirmed === true || s === "agent_confirmed" || s === "agent confirmed")
+      ? "agent_confirmed"
     : "pending";
+
   const img = resolveImg(b.property?.images?.[0] || b.property?.image || b.propertyId?.images?.[0] || b.propertyId?.image || b.propertyImage || b.image || "");
   return {
-    _id:     b._id || b.id || String(Date.now()),
+    _id:          b._id || b.id || String(Date.now()),
+    agentConfirmed: b.agentConfirmed === true,
+    userConfirmed:  b.userConfirmed  === true,
     title:   b.property?.title || b.propertyTitle || b.propertyId?.title || b.title || "Property",
     image:   img,
     address: [b.property?.street || b.propertyId?.street, b.property?.area || b.propertyId?.area, b.property?.city || b.propertyId?.city, b.property?.state || b.propertyId?.state].filter(Boolean).join(", ") || b.propertyAddress || "",
@@ -76,12 +93,14 @@ function useAgentOrders() {
       if (!res.ok) throw new Error(`Server returned ${res.status}`);
       const data = await res.json();
       const raw = Array.isArray(data.data) ? data.data : [];
+      // Log raw API response so we can see actual field names/values
+      console.log("[useAgentOrders] raw API data:", JSON.stringify(raw.slice(0, 2), null, 2));
       const mapped = raw.map(mapBooking);
       // localStorage fallback: if agentConfirmed not yet reflected by API, apply locally
       const agentConfirmedIds = JSON.parse(localStorage.getItem("nestfind_agent_confirmed_ids") || "[]");
       const withOverrides = mapped.map(b =>
-        (agentConfirmedIds.includes(b._id) && b.status === "pending")
-          ? { ...b, status: "agent_confirmed" }
+        (agentConfirmedIds.includes(b._id) && !b.agentConfirmed)
+          ? { ...b, agentConfirmed: true, status: b.status === "pending" ? "agent_confirmed" : b.status }
           : b
       );
       setOrders(withOverrides);
@@ -101,16 +120,33 @@ function useAgentOrders() {
       const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
 
       if (newStatus === "agent_confirmed") {
-        // ✅ Agent confirm endpoint: PATCH /api/v1/escrow/confirm-agent/:id
         const res = await fetch(`${API_BASE}/api/v1/escrow/confirm-agent/${id}`, {
           method: "PATCH", headers,
         });
         const json = await res.json().catch(() => ({}));
         if (!res.ok && json.success !== true) throw new Error(`Confirm failed: ${res.status}`);
-        // Persist to localStorage — API returns data:null so we track locally
+        // Read real flags from API response and update order
+        const { agentConfirmed, userConfirmed, bookingStatus } = json.data || {};
+        // Only mark as fully user_confirmed if BOTH agent and user have confirmed
+        const resolvedStatus = (agentConfirmed === true && userConfirmed === true && bookingStatus === "completed")
+          ? "user_confirmed"
+          : "agent_confirmed";
+        setOrders(prev => prev.map(o =>
+          o._id === id ? { ...o, status: resolvedStatus, agentConfirmed: agentConfirmed ?? true, userConfirmed: userConfirmed ?? o.userConfirmed } : o
+        ));
+        // Keep localStorage as refresh safety net
         const ids = JSON.parse(localStorage.getItem("nestfind_agent_confirmed_ids") || "[]");
         if (!ids.includes(id)) { ids.push(id); localStorage.setItem("nestfind_agent_confirmed_ids", JSON.stringify(ids)); }
-        console.log("[updateStatus] ✅ agent_confirmed via /escrow/confirm-agent");
+      } else if (newStatus === "user_confirmed") {
+        // Agent accepts after user confirmed — release payment via escrow
+        const res = await fetch(`${API_BASE}/api/v1/escrow/confirm-agent/${id}`, {
+          method: "PATCH", headers,
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok && json.success !== true) throw new Error("Accept failed");
+        setOrders(prev => prev.map(o =>
+          o._id === id ? { ...o, status: "user_confirmed", agentConfirmed: true, userConfirmed: true } : o
+        ));
       } else {
         // For disputed / cancelled — try generic booking status update
         const res = await fetch(`${API_BASE}/api/v1/booking/${id}/status`, {
@@ -158,7 +194,11 @@ function BookingCard({ order, onUpdateStatus, index }) {
       await onUpdateStatus(order._id, "__deleted__");
     } catch { setDeleting(false); alert("Could not delete booking. Please try again."); }
   };
-  const cfg = STATUS[order.status] || STATUS.pending;
+  // Show amber "Action Required" badge when user has confirmed and agent needs to act
+  const isAwaitingAgentAction = order.status === "agent_confirmed" && order.userConfirmed;
+  const cfg = isAwaitingAgentAction
+    ? { bg:"#fffbeb", color:"#92400e", border:"#fde68a", dot:"#f59e0b", label:"Action Required" }
+    : STATUS[order.status] || STATUS.pending;
   const img = order.image;
 
   const act = async (s) => { setBusy(true); await onUpdateStatus(order._id, s); setBusy(false); };
@@ -233,7 +273,7 @@ function BookingCard({ order, onUpdateStatus, index }) {
           </div>
 
           {/* Datetime chips + actions */}
-          <div className="bcard-footer" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <div className="bcard-footer" style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {order.date && (
                 <div style={{ display: "flex", alignItems: "center", gap: 5, background: "#eff6ff", border: "1px solid #bfdbfe", padding: "5px 10px", borderRadius: 8, fontSize: 11.5, fontWeight: 600, color: BLUE }}>
@@ -251,46 +291,72 @@ function BookingCard({ order, onUpdateStatus, index }) {
             </div>
 
             {/* Action buttons */}
-            <div style={{ display: "flex", gap: 8 }}>
+            <div style={{ display: "flex", gap: 8, marginLeft: "auto" }}>
+              {/* PENDING: agent hasn't confirmed yet — show Confirm + Dispute + Delete */}
               {order.status === "pending" && (
                 <>
                   <button onClick={() => act("agent_confirmed")} disabled={busy || deleting} className="act-btn" style={{ display: "flex", alignItems: "center", gap: 5, padding: "8px 16px", background: "linear-gradient(135deg,#10b981,#059669)", color: WHITE, border: "none", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 12px rgba(16,185,129,0.3)", opacity: busy ? 0.6 : 1 }}>
                     <CheckCircle size={13} /> Confirm
                   </button>
-                  <button onClick={() => act("disputed")} disabled={busy || deleting} className="act-btn" style={{ display: "flex", alignItems: "center", gap: 5, padding: "8px 16px", background: WHITE, color: "#ef4444", border: "1.5px solid #fecaca", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer", opacity: busy ? 0.6 : 1 }}>
+                  <button onClick={() => act("disputed")} disabled={busy || deleting} className="act-btn"
+                    style={{ display: "flex", alignItems: "center", gap: 5, padding: "8px 16px", background: WHITE, color: "#ef4444", border: "1.5px solid #fecaca", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: busy ? "not-allowed" : "pointer", opacity: busy ? 0.6 : 1 }}>
                     <AlertCircle size={13} /> Dispute
+                  </button>
+                  <button onClick={handleDelete} disabled={deleting || busy} className="act-btn"
+                    style={{ display: "flex", alignItems: "center", gap: 5, padding: "8px 16px", background: deleting ? "#9ca3af" : "#fef2f2", color: deleting ? WHITE : "#ef4444", border: "1px solid #fecaca", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: deleting ? "not-allowed" : "pointer" }}>
+                    {deleting
+                      ? <><span style={{ width: 11, height: 11, border: "2px solid rgba(255,255,255,0.4)", borderTopColor: WHITE, borderRadius: "50%", display: "inline-block", animation: "spin .7s linear infinite" }} /> Deleting…</>
+                      : <><XCircle size={13} /> Delete</>
+                    }
                   </button>
                 </>
               )}
+              {/* AGENT_CONFIRMED: agent confirmed, user hasn't inspected yet — Accept + Dispute + Delete */}
               {order.status === "agent_confirmed" && (
-                <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "8px 16px", background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe", borderRadius: 10, fontSize: 12, fontWeight: 700 }}>
-                  🔔 Awaiting User
-                </div>
+                <>
+                  <button onClick={() => act("user_confirmed")} disabled={busy || deleting} className="act-btn"
+                    style={{ display: "flex", alignItems: "center", gap: 5, padding: "8px 16px", background: busy ? "#9ca3af" : "linear-gradient(135deg,#10b981,#059669)", color: WHITE, border: "none", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: busy ? "not-allowed" : "pointer", boxShadow: busy ? "none" : "0 4px 12px rgba(16,185,129,0.3)", opacity: busy ? 0.7 : 1 }}>
+                    {busy
+                      ? <><span style={{ width: 11, height: 11, border: "2px solid rgba(255,255,255,0.4)", borderTopColor: WHITE, borderRadius: "50%", display: "inline-block", animation: "spin .7s linear infinite" }} /> Accepting…</>
+                      : <><CheckCircle size={13} /> Accept</>
+                    }
+                  </button>
+                  <button onClick={() => act("disputed")} disabled={busy || deleting} className="act-btn"
+                    style={{ display: "flex", alignItems: "center", gap: 5, padding: "8px 16px", background: WHITE, color: "#ef4444", border: "1.5px solid #fecaca", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: busy ? "not-allowed" : "pointer", opacity: busy ? 0.6 : 1 }}>
+                    <AlertCircle size={13} /> Dispute
+                  </button>
+                  <button onClick={handleDelete} disabled={deleting || busy} className="act-btn"
+                    style={{ display: "flex", alignItems: "center", gap: 5, padding: "8px 16px", background: deleting ? "#9ca3af" : "#fef2f2", color: deleting ? WHITE : "#ef4444", border: "1px solid #fecaca", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: deleting ? "not-allowed" : "pointer" }}>
+                    {deleting
+                      ? <><span style={{ width: 11, height: 11, border: "2px solid rgba(255,255,255,0.4)", borderTopColor: WHITE, borderRadius: "50%", display: "inline-block", animation: "spin .7s linear infinite" }} /> Deleting…</>
+                      : <><XCircle size={13} /> Delete</>
+                    }
+                  </button>
+                </>
               )}
+              {/* USER_CONFIRMED / COMPLETED: inspection done, payment released */}
               {order.status === "user_confirmed" && (
                 <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "8px 16px", background: "linear-gradient(135deg,#ecfdf5,#d1fae5)", color: "#065f46", border: "1px solid #a7f3d0", borderRadius: 10, fontSize: 12, fontWeight: 700 }}>
                   <CheckCircle size={13} /> Completed
                 </div>
               )}
+              {/* DISPUTED */}
               {order.status === "disputed" && (
-                <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "8px 16px", background: "#fff1f2", color: "#be123c", border: "1px solid #fecdd3", borderRadius: 10, fontSize: 12, fontWeight: 700 }}>
-                  <AlertCircle size={13} /> Disputed
-                </div>
+                <>
+                  <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "8px 16px", background: "#fff1f2", color: "#be123c", border: "1px solid #fecdd3", borderRadius: 10, fontSize: 12, fontWeight: 700 }}>
+                    <AlertCircle size={13} /> Disputed
+                  </div>
+                  <button onClick={handleDelete} disabled={deleting || busy} className="act-btn"
+                    style={{ display: "flex", alignItems: "center", gap: 5, padding: "8px 16px", background: deleting ? "#9ca3af" : "#fef2f2", color: deleting ? WHITE : "#ef4444", border: "1px solid #fecaca", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: deleting ? "not-allowed" : "pointer" }}>
+                    {deleting ? "Deleting…" : <><XCircle size={13} /> Delete</>}
+                  </button>
+                </>
               )}
+              {/* CANCELLED */}
               {order.status === "cancelled" && (
                 <div style={{ padding: "8px 16px", background: "#f8fafc", color: "#64748b", border: "1px solid #e2e8f0", borderRadius: 10, fontSize: 12, fontWeight: 700 }}>
                   Cancelled
                 </div>
-              )}
-              {/* Delete button — only on pending/disputed/cancelled */}
-              {(order.status === "pending" || order.status === "disputed" || order.status === "cancelled") && (
-                <button onClick={handleDelete} disabled={deleting || busy} className="act-btn"
-                  style={{ display: "flex", alignItems: "center", gap: 5, padding: "8px 16px", background: deleting ? "#9ca3af" : "#fef2f2", color: deleting ? WHITE : "#ef4444", border: "1px solid #fecaca", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: deleting ? "not-allowed" : "pointer", transition: "all .2s" }}>
-                  {deleting
-                    ? <><span style={{ width: 11, height: 11, border: "2px solid rgba(255,255,255,0.4)", borderTopColor: WHITE, borderRadius: "50%", display: "inline-block", animation: "spin .7s linear infinite" }} /> Deleting…</>
-                    : <><XCircle size={13} /> Delete</>
-                  }
-                </button>
               )}
             </div>
           </div>
@@ -374,6 +440,26 @@ export default function AgentOrdersPage() {
           </button>
         </div>
 
+        {/* ── Debug panel — remove after fixing ── */}
+        {!loading && orders.length > 0 && (
+          <details style={{ marginBottom: 16, background: "#1e293b", borderRadius: 12, padding: "12px 16px", fontSize: 11, fontFamily: "monospace", color: "#94a3b8", border: "1px solid #334155" }}>
+            <summary style={{ cursor: "pointer", color: "#60a5fa", fontWeight: 700, fontSize: 12, marginBottom: 4 }}>🔍 Debug: Raw order statuses (click to expand)</summary>
+            <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+              {orders.map(o => (
+                <div key={o._id} style={{ background: "#0f172a", borderRadius: 8, padding: "8px 12px", color: "#e2e8f0" }}>
+                  <span style={{ color: "#f472b6" }}>{o.title}</span>
+                  {" → "}
+                  <span style={{ color: "#4ade80" }}>mapped status: <b>{o.status}</b></span>
+                  {" | agentConfirmed: "}
+                  <span style={{ color: o.agentConfirmed ? "#4ade80" : "#f87171" }}>{String(o.agentConfirmed)}</span>
+                  {" | userConfirmed: "}
+                  <span style={{ color: o.userConfirmed ? "#4ade80" : "#f87171" }}>{String(o.userConfirmed)}</span>
+                </div>
+              ))}
+            </div>
+          </details>
+        )}
+
         {/* ── Stat cards ── */}
         {!loading && !error && (
           <div className="stats-row" style={{ marginBottom: 32 }}>
@@ -420,7 +506,7 @@ export default function AgentOrdersPage() {
                       boxShadow: active ? `0 4px 14px rgba(26,86,219,.25)` : "none",
                       display: "flex", alignItems: "center", gap: 5 }}>
                     {!active && <div style={{ width: 6, height: 6, borderRadius: "50%", background: dot }} />}
-                    {f === "all" ? "All" : f === "agent_confirmed" ? "Agent Confirmed" : f === "user_confirmed" ? "Confirmed" : f.charAt(0).toUpperCase() + f.slice(1)}
+                    {f === "all" ? "All" : f === "agent_confirmed" ? "Awaiting User" : f === "user_confirmed" ? "Confirmed" : f.charAt(0).toUpperCase() + f.slice(1)}
                     <span style={{ background: active ? "rgba(255,255,255,.25)" : "#e2e8f0", color: active ? WHITE : "#94a3b8", padding: "1px 6px", borderRadius: 100, fontSize: 10.5 }}>{cnt}</span>
                   </button>
                 );

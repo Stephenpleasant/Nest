@@ -18,13 +18,23 @@ function formatDate(dateStr) {
 }
 
 export default function OrderRow({ order, last, onUpdateStatus }) {
+  const [agentConfirmed, setAgentConfirmed] = useState(order.agentConfirmed === true)
   const [status, setStatus] = useState(order.status || 'pending')
   const [updating, setUpdating] = useState(false)
 
-  const handleUpdate = async (newStatus) => {
+  const handleConfirm = async () => {
     setUpdating(true)
-    setStatus(newStatus)
-    await onUpdateStatus(order._id, newStatus)
+    // Optimistic — hide button immediately
+    setAgentConfirmed(true)
+    setStatus('confirmed')
+    await onUpdateStatus(order._id, 'agent_confirmed')
+    setUpdating(false)
+  }
+
+  const handleDispute = async () => {
+    setUpdating(true)
+    setStatus('disputed')
+    await onUpdateStatus(order._id, 'disputed')
     setUpdating(false)
   }
 
@@ -105,10 +115,10 @@ export default function OrderRow({ order, last, onUpdateStatus }) {
 
       {/* Actions */}
       <div className="flex flex-col gap-1.5">
-        {status === 'pending' && (
+        {!agentConfirmed && (
           <>
             <button
-              onClick={() => handleUpdate('confirmed')}
+              onClick={handleConfirm}
               disabled={updating}
               className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-all hover:opacity-90 active:scale-95 disabled:opacity-50"
               style={{ background: '#1a56db' }}
@@ -116,7 +126,7 @@ export default function OrderRow({ order, last, onUpdateStatus }) {
               <CheckCircle size={12} /> Confirm
             </button>
             <button
-              onClick={() => handleUpdate('disputed')}
+              onClick={handleDispute}
               disabled={updating}
               className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-red-500 hover:bg-red-600 transition-all active:scale-95 disabled:opacity-50"
             >
@@ -124,7 +134,7 @@ export default function OrderRow({ order, last, onUpdateStatus }) {
             </button>
           </>
         )}
-        {status === 'confirmed' && (
+        {agentConfirmed && status !== 'disputed' && status !== 'cancelled' && (
           <span className="text-xs text-green-600 font-semibold px-3 py-1.5 rounded-lg bg-green-50 border border-green-200 text-center">
             ✓ Confirmed
           </span>
