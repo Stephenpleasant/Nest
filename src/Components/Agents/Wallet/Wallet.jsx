@@ -8,39 +8,58 @@ const _raw    = import.meta.env?.VITE_API_BASE_URL || "https://gtimeconnect.onre
 const API_BASE = _raw.replace(/\/api\/?$/, "").replace(/\/$/, "");
 
 function useWallet() {
-  const [wallet,  setWallet]  = useState({ availableBalance: 0, escrowBalance: 0 });
+  const [wallet,       setWallet]       = useState({ availableBalance: 0, escrowBalance: 0 });
   const [transactions, setTransactions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState(null);
+  const [loading,      setLoading]      = useState(true);
+  const [error,        setError]        = useState(null);
 
   const fetchWallet = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const token = localStorage.getItem("token");
-      const res   = await fetch(`${API_BASE}/api/v1/wallet`, {
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      });
-      if (!res.ok) throw new Error(`Server returned ${res.status}`);
-      const json = await res.json();
-      // Response: { success, data: { escrowBalance, availableBalance } }
-      const d = json.data || {};
+      const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+
+      // Fetch wallet balance and transactions in parallel
+      const [walletRes, txRes] = await Promise.all([
+        fetch(`${API_BASE}/api/v1/wallet`, { headers }),
+        fetch(`${API_BASE}/api/v1/payment/transactions`, { headers }),
+      ]);
+
+      if (!walletRes.ok) throw new Error(`Wallet fetch failed (${walletRes.status})`);
+
+      const walletJson = await walletRes.json();
+      const d = walletJson.data || {};
       setWallet({
         availableBalance: d.availableBalance ?? d.balance ?? 0,
         escrowBalance:    d.escrowBalance    ?? d.escrow  ?? 0,
       });
-      // Transactions — use data.transactions if available, else empty
-      const txs = d.transactions || d.history || [];
-      setTransactions(txs.map((t, i) => ({
-        id:     t._id || t.id || i,
-        type:   t.type === "credit" || t.amount > 0 ? "credit" : "debit",
-        label:  t.description || t.label || t.narration || "Transaction",
-        amount: Math.abs(t.amount || 0),
-        date:   t.createdAt
-          ? new Date(t.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
-          : t.date || "",
-        status: t.status || "completed",
-      })));
+
+      // Transactions — gracefully handle failure without breaking the page
+      if (txRes.ok) {
+        const txJson = await txRes.json();
+        // Support both shapes: { data: [...] } or { data: { transactions: [...] } }
+        const raw = Array.isArray(txJson.data)
+          ? txJson.data
+          : txJson.data?.transactions || txJson.data?.history || [];
+
+        setTransactions(
+          raw.map((t, i) => ({
+            id:     t._id || t.id || i,
+            type:   t.type === "credit" ? "credit" : "debit",
+            label:  t.description || t.label || t.narration || "Transaction",
+            amount: Math.abs(t.amount || 0),
+            date:   t.createdAt
+              ? new Date(t.createdAt).toLocaleDateString("en-GB", {
+                  day: "numeric", month: "short", year: "numeric",
+                })
+              : t.date || "",
+            status: t.status || "completed",
+          }))
+        );
+      } else {
+        setTransactions([]);
+      }
     } catch (e) {
       setError(e.message);
     } finally {
@@ -57,9 +76,8 @@ export default function WalletPage() {
   const [showBalance, setShowBalance] = useState(true);
   const [showModal,   setShowModal]   = useState(false);
 
-  // Compute totals from live transactions (fall back to 0 if no tx history)
-  const totalEarned     = transactions.filter(t => t.type === "credit").reduce((s, t) => s + t.amount, 0);
-  const totalWithdrawn  = transactions.filter(t => t.type === "debit" ).reduce((s, t) => s + t.amount, 0);
+  const totalEarned    = transactions.filter(t => t.type === "credit").reduce((s, t) => s + t.amount, 0);
+  const totalWithdrawn = transactions.filter(t => t.type === "debit" ).reduce((s, t) => s + t.amount, 0);
 
   return (
     <div className="p-8 min-h-screen bg-gray-50 font-sans">
@@ -75,7 +93,8 @@ export default function WalletPage() {
           className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-gray-200 text-sm font-semibold text-gray-500 hover:text-blue-600 hover:border-blue-300 transition-all shadow-sm"
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+            <polyline points="23 4 23 10 17 10"/>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
           </svg>
           Refresh
         </button>
@@ -103,7 +122,6 @@ export default function WalletPage() {
       {/* Content */}
       {!loading && !error && (
         <>
-          {/* Escrow notice — only if escrow > 0 */}
           {wallet.escrowBalance > 0 && (
             <div className="mb-5 flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-5 py-3.5">
               <span className="text-xl">🔒</span>
@@ -128,7 +146,7 @@ export default function WalletPage() {
                 totalWithdrawn={totalWithdrawn}
               />
 
-              {/* Escrow mini-card below balance */}
+              {/* Escrow mini-card */}
               <div className="mt-4 bg-white rounded-2xl border border-gray-200 shadow-sm px-6 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-amber-50 grid place-items-center text-xl">🔒</div>

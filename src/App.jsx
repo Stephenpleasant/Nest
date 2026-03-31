@@ -17,14 +17,14 @@ import AgentOrdersPage    from './Components/Agents/Bookings/AgentOrders'
 import Settings           from './Components/Users/Settings/Setting'
 
 // ── Admin imports ─────────────────────────────────────────────────────────────
-import AdminSidebar       from './Components/Admin/component/Navbar'        // your Navbar.jsx
-import AdminPageContent   from './Components/Admin/component/PageContent'   // your PageContent.jsx
-import { PAGES }          from './Components/Admin/component/NavConfig'     // your NavConfig.js
+import AdminSidebar       from './Components/Admin/component/Navbar'
+import AdminPageContent   from './Components/Admin/component/PageContent'
+import { PAGES }          from './Components/Admin/component/NavConfig'
+import AdminAuth from './Adminauth'
 
 const NAV_W = 260
 
 // ── Route map shared by all agent layouts ─────────────────────────────────────
-
 const AGENT_ROUTE_MAP = {
   'Dashboard':        '/agent-dashboard',
   'Bookings':         '/agent-bookings',
@@ -34,8 +34,7 @@ const AGENT_ROUTE_MAP = {
   'Settings':         '/settings',
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
+// ── Helpers ───────────────────────────────────────────────────────────────────
 const getUser = () => {
   try { return JSON.parse(localStorage.getItem('user') || '{}') } catch { return {} }
 }
@@ -56,32 +55,29 @@ const getRedirectPath = () => {
   try {
     const user = getUser()
     if (!isAuthenticated()) return '/'
-    if (user.userType === 'admin')  return '/admin'
-    if (user.userType === 'agent')  return '/agent-dashboard'
+    if (user.userType === 'admin') return '/admin'
+    if (user.userType === 'agent') return '/agent-dashboard'
     return '/dashboard'
   } catch { return '/' }
 }
 
 // ── Protected Route ───────────────────────────────────────────────────────────
-
 function ProtectedRoute({ children, agentOnly = false, adminOnly = false }) {
-  if (!isAuthenticated()) return <Navigate to="/" replace />
+  if (!isAuthenticated()) {
+    // Redirect admins to admin-login instead of the general login page
+    if (adminOnly) return <Navigate to="/admin-login" replace />
+    return <Navigate to="/" replace />
+  }
   if (agentOnly && getUser().userType !== 'agent') return <Navigate to="/dashboard" replace />
-  if (adminOnly && !isAdmin()) return <Navigate to="/" replace />
+  if (adminOnly && !isAdmin())                      return <Navigate to="/admin-login" replace />
   return children
 }
 
 // ── Admin Layout ──────────────────────────────────────────────────────────────
-
 function AdminLayout() {
-  // Default to "dashboard" page; falls back gracefully if id is unknown
   const [activeId, setActiveId] = useState('dashboard')
 
-  const page = PAGES[activeId] ?? {
-    title: 'Page',
-    subtitle: '',
-    emoji: '📄',
-  }
+  const page = PAGES[activeId] ?? { title: 'Page', subtitle: '', emoji: '📄' }
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
@@ -92,7 +88,6 @@ function AdminLayout() {
 }
 
 // ── Agent Layout ──────────────────────────────────────────────────────────────
-
 function AgentLayout({ children }) {
   const navigate = useNavigate()
   const location = useLocation()
@@ -121,11 +116,10 @@ function AgentLayout({ children }) {
 }
 
 // ── Settings Layout ───────────────────────────────────────────────────────────
-
 function SettingsLayout() {
-  const navigate = useNavigate()
+  const navigate     = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const user = getUser()
+  const user   = getUser()
   const isAgent = user?.userType === 'agent'
 
   if (isAgent) {
@@ -164,7 +158,6 @@ function SettingsLayout() {
 }
 
 // ── App ───────────────────────────────────────────────────────────────────────
-
 function App() {
   const [, setToken] = useState(localStorage.getItem('token'))
 
@@ -184,8 +177,21 @@ function App() {
           element={isAuthenticated() ? <Navigate to={getRedirectPath()} replace /> : <LandingPage />}
         />
 
-        {/* ── Admin routes (no auth required for now — add ProtectedRoute adminOnly later) ── */}
-        <Route path="/admin" element={<AdminLayout />} />
+        {/* ── Admin login / register ── */}
+        <Route
+          path="/admin-login"
+          element={isAdmin() ? <Navigate to="/admin" replace /> : <AdminAuth />}
+        />
+
+        {/* ── Admin dashboard (protected — admin only) ── */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute adminOnly>
+              <AdminLayout />
+            </ProtectedRoute>
+          }
+        />
 
         {/* ── User routes ── */}
         <Route path="/dashboard"      element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
