@@ -4,343 +4,319 @@ const BLUE  = "#1a56db";
 const NAVY  = "#0b1a2e";
 const WHITE = "#ffffff";
 
-// ── Mini sparkline (pure SVG, no lib) ────────────────────────────────────────
-function Sparkline({ data = [], color = BLUE, height = 40 }) {
-  const w = 120;
+const API_BASE = "https://gtimeconnect.onrender.com/api/v1/admin";
+const getToken = () => localStorage.getItem("token") || "";
+const AUTH_HEADERS = () => ({
+  "Content-Type": "application/json",
+  Authorization: `Bearer ${getToken()}`,
+});
+
+// ── Sparkline ──────────────────────────────────────────────────────────────────
+function Sparkline({ data = [], color = BLUE }) {
+  const svgW = 300;
+  const svgH = 52;
   const max = Math.max(...data, 1);
+  const min = Math.min(...data, 0);
+  const range = max - min || 1;
   const pts = data
-    .map((v, i) => `${(i / (data.length - 1)) * w},${height - (v / max) * height}`)
+    .map((v, i) => `${(i / (data.length - 1)) * svgW},${svgH - ((v - min) / range) * (svgH - 6) - 3}`)
     .join(" ");
+  const lastX = svgW;
+  const lastY = svgH - ((data[data.length - 1] - min) / range) * (svgH - 6) - 3;
+  const areapts = `0,${svgH} ${pts} ${svgW},${svgH}`;
+  const gradId = `sg-${color.replace("#", "")}`;
+
   return (
-    <svg width={w} height={height} style={{ display: "block" }}>
-      <polyline
-        points={pts}
-        fill="none"
-        stroke={color}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+    <svg
+      width="100%" height="100%"
+      viewBox={`0 0 ${svgW} ${svgH}`}
+      preserveAspectRatio="none"
+      style={{ display: "block" }}
+    >
+      <defs>
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.2" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <polygon points={areapts} fill={`url(#${gradId})`} />
+      <polyline points={pts} fill="none" stroke={color} strokeWidth="2.5"
+        strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={lastX} cy={lastY} r="4" fill={color} opacity="0.9" />
     </svg>
   );
 }
 
-// ── Stat Card ─────────────────────────────────────────────────────────────────
-function StatCard({ label, value, sub, spark, color = BLUE, icon }) {
+// ── Stat Card ──────────────────────────────────────────────────────────────────
+function StatCard({ label, value, sub, spark, color, icon, loading, trend }) {
   return (
     <div
       style={{
         background: WHITE,
-        borderRadius: 16,
-        padding: "20px 22px",
+        borderRadius: 20,
+        padding: "clamp(14px, 2.2vh, 26px) clamp(16px, 2vw, 28px)",
         display: "flex",
         flexDirection: "column",
-        gap: 10,
-        boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
-        border: "1px solid #f3f4f6",
+        boxShadow: "0 4px 24px rgba(11,26,46,0.08)",
+        border: "1px solid #f0f2f7",
+        position: "relative",
+        overflow: "hidden",
+        transition: "transform 0.2s, box-shadow 0.2s",
+        height: "100%",
+        boxSizing: "border-box",
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.transform = "translateY(-3px)";
+        e.currentTarget.style.boxShadow = `0 14px 40px rgba(11,26,46,0.12), 0 2px 8px ${color}22`;
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.transform = "translateY(0)";
+        e.currentTarget.style.boxShadow = "0 4px 24px rgba(11,26,46,0.08)";
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span
-          style={{
-            fontSize: 11,
-            fontWeight: 600,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            color: "#9ca3af",
-          }}
-        >
+      {/* Accent top bar */}
+      <div style={{
+        position: "absolute", top: 0, left: 0, right: 0, height: 4,
+        background: `linear-gradient(90deg, ${color}, ${color}99)`,
+        borderRadius: "20px 20px 0 0",
+      }} />
+
+      {/* Decorative bg circle */}
+      <div style={{
+        position: "absolute", top: -24, right: -24,
+        width: 100, height: 100, borderRadius: "50%",
+        background: color + "0a", pointerEvents: "none",
+      }} />
+
+      {/* Top row */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "clamp(10px, 1.5vh, 18px)", flexShrink: 0 }}>
+        <div style={{
+          width: "clamp(36px, 3.5vw, 50px)", height: "clamp(36px, 3.5vw, 50px)",
+          borderRadius: 14, background: color + "15",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: "clamp(17px, 1.8vw, 24px)", flexShrink: 0,
+          border: `1.5px solid ${color}25`,
+        }}>
+          {icon}
+        </div>
+        <span style={{
+          fontSize: "clamp(9px, 0.7vw, 11px)", fontWeight: 700,
+          letterSpacing: "0.1em", textTransform: "uppercase", color: "#adb5c2",
+        }}>
           {label}
         </span>
-        <span
-          style={{
-            fontSize: 18,
-            width: 36,
-            height: 36,
-            borderRadius: 10,
-            background: color + "18",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          {icon}
-        </span>
       </div>
-      <p style={{ margin: 0, fontSize: 28, fontWeight: 800, color: NAVY, fontFamily: "Poppins, sans-serif", lineHeight: 1 }}>
-        {value}
+
+      {/* Value */}
+      <p style={{
+        margin: "0 0 4px",
+        fontSize: "clamp(24px, 3vw, 40px)",
+        fontWeight: 800, color: loading ? "#e5e7eb" : NAVY,
+        fontFamily: "Poppins, sans-serif", lineHeight: 1,
+        letterSpacing: "-1px", flexShrink: 0,
+        background: loading ? "#f3f4f6" : "none",
+        borderRadius: loading ? 8 : 0,
+        minHeight: "1em",
+      }}>
+        {loading ? "" : value}
       </p>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ fontSize: 12, color: "#6b7280" }}>{sub}</span>
-        {spark && <Sparkline data={spark} color={color} />}
+
+      {/* Sub + trend */}
+      <p style={{
+        margin: "0 0 clamp(6px, 1vh, 14px)",
+        fontSize: "clamp(11px, 1vw, 13px)",
+        color: "#9ca3af", fontWeight: 500, flexShrink: 0,
+        display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap",
+      }}>
+        {!loading && trend != null && (
+          <span style={{
+            fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 20,
+            background: trend >= 0 ? "#dcfce7" : "#fee2e2",
+            color: trend >= 0 ? "#16a34a" : "#dc2626",
+          }}>
+            {trend >= 0 ? "▲" : "▼"} {Math.abs(trend)}%
+          </span>
+        )}
+        {loading ? "" : sub}
+      </p>
+
+      {/* Sparkline — flex-grow fills remaining card height */}
+      <div style={{ flex: 1, minHeight: 0, marginLeft: -2, marginRight: -2, marginBottom: -2 }}>
+        <Sparkline data={spark} color={color} />
       </div>
-    </div>
-  );
-}
-
-// ── Donut chart (pure SVG) ────────────────────────────────────────────────────
-function DonutChart({ slices }) {
-  const r = 54, cx = 68, cy = 68, stroke = 18;
-  const total = slices.reduce((a, s) => a + s.value, 0);
-  let offset = 0;
-  const circ = 2 * Math.PI * r;
-
-  return (
-    <svg width="136" height="136">
-      {slices.map((s, i) => {
-        const pct = s.value / total;
-        const dashArr = `${pct * circ} ${circ}`;
-        const el = (
-          <circle
-            key={i}
-            cx={cx}
-            cy={cy}
-            r={r}
-            fill="none"
-            stroke={s.color}
-            strokeWidth={stroke}
-            strokeDasharray={dashArr}
-            strokeDashoffset={-offset * circ}
-            strokeLinecap="butt"
-            style={{ transform: "rotate(-90deg)", transformOrigin: "50% 50%" }}
-          />
-        );
-        offset += pct;
-        return el;
-      })}
-      <text x={cx} y={cy - 6} textAnchor="middle" style={{ fontSize: 20, fontWeight: 800, fill: NAVY, fontFamily: "Poppins" }}>
-        {total}
-      </text>
-      <text x={cx} y={cy + 14} textAnchor="middle" style={{ fontSize: 11, fill: "#9ca3af" }}>
-        total
-      </text>
-    </svg>
-  );
-}
-
-// ── Bar chart (pure SVG) ──────────────────────────────────────────────────────
-function BarChart({ data }) {
-  const max = Math.max(...data.map((d) => d.value), 1);
-  const w = 340, h = 110, barW = 28, gap = (w - data.length * barW) / (data.length + 1);
-  return (
-    <svg width={w} height={h + 30} style={{ display: "block" }}>
-      {data.map((d, i) => {
-        const bh = (d.value / max) * h;
-        const x = gap + i * (barW + gap);
-        const y = h - bh;
-        return (
-          <g key={i}>
-            <rect x={x} y={y} width={barW} height={bh} rx={5} fill={BLUE} opacity={0.15 + 0.85 * (d.value / max)} />
-            <text x={x + barW / 2} y={h + 18} textAnchor="middle" style={{ fontSize: 10, fill: "#9ca3af" }}>
-              {d.label}
-            </text>
-          </g>
-        );
-      })}
-    </svg>
-  );
-}
-
-// ── Recent Transactions ───────────────────────────────────────────────────────
-const TXS = [
-  { user: "Adaeze Obi",     type: "Withdrawal",   amount: "₦450,000", status: "pending",  time: "2m ago",   avatar: "AO" },
-  { user: "Emeka Nwosu",    type: "Property List", amount: "₦1,200,000", status: "approved", time: "14m ago",  avatar: "EN" },
-  { user: "Fatima Bello",   type: "Withdrawal",   amount: "₦320,000", status: "approved", time: "1h ago",   avatar: "FB" },
-  { user: "Chidi Okeke",    type: "User Signup",  amount: "—",        status: "new",      time: "2h ago",   avatar: "CO" },
-  { user: "Ngozi Adeleke",  type: "Property List", amount: "₦750,000", status: "review",   time: "3h ago",   avatar: "NA" },
-];
-
-const STATUS_COLORS = {
-  pending:  { bg: "#fef3c7", color: "#92400e" },
-  approved: { bg: "#d1fae5", color: "#065f46" },
-  new:      { bg: "#ede9fe", color: "#4c1d95" },
-  review:   { bg: "#dbeafe", color: "#1e3a8a" },
-};
-
-function TxRow({ tx }) {
-  const sc = STATUS_COLORS[tx.status] || STATUS_COLORS.new;
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 14,
-        padding: "12px 0",
-        borderBottom: "1px solid #f3f4f6",
-      }}
-    >
-      <div
-        style={{
-          width: 36, height: 36, borderRadius: "50%",
-          background: "linear-gradient(135deg, #1a56db, #0b1a2e)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          flexShrink: 0,
-        }}
-      >
-        <span style={{ fontSize: 11, fontWeight: 700, color: WHITE }}>{tx.avatar}</span>
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ margin: 0, fontSize: 13.5, fontWeight: 600, color: NAVY, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-          {tx.user}
-        </p>
-        <p style={{ margin: 0, fontSize: 12, color: "#6b7280" }}>{tx.type}</p>
-      </div>
-      <span style={{ fontSize: 13.5, fontWeight: 700, color: NAVY, whiteSpace: "nowrap" }}>{tx.amount}</span>
-      <span
-        style={{
-          fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 100,
-          background: sc.bg, color: sc.color, textTransform: "capitalize", whiteSpace: "nowrap",
-        }}
-      >
-        {tx.status}
-      </span>
-      <span style={{ fontSize: 11, color: "#9ca3af", whiteSpace: "nowrap" }}>{tx.time}</span>
     </div>
   );
 }
 
 // ── Main Dashboard ─────────────────────────────────────────────────────────────
 export default function AdminDashboard() {
-  const [time, setTime] = useState(new Date());
+  const [time, setTime]                 = useState(new Date());
+  const [stats, setStats]               = useState(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError]     = useState(null);
+
   useEffect(() => {
     const id = setInterval(() => setTime(new Date()), 60000);
     return () => clearInterval(id);
   }, []);
 
-  const greeting = time.getHours() < 12 ? "Good morning" : time.getHours() < 17 ? "Good afternoon" : "Good evening";
+  useEffect(() => {
+    (async () => {
+      setStatsLoading(true); setStatsError(null);
+      try {
+        const res = await fetch(`${API_BASE}/dashboard/stats`, { headers: AUTH_HEADERS() });
+        if (!res.ok) throw new Error(`Failed to load stats (${res.status})`);
+        const json = await res.json();
+        setStats(json.data ?? json);
+      } catch (e) { setStatsError(e.message); }
+      finally { setStatsLoading(false); }
+    })();
+  }, []);
+
+  const greeting =
+    time.getHours() < 12 ? "Good morning"
+    : time.getHours() < 17 ? "Good afternoon"
+    : "Good evening";
+
+  const fmtMoney = (val) => {
+    if (val == null) return "—";
+    if (val >= 1_000_000) return `₦${(val / 1_000_000).toFixed(1)}M`;
+    if (val >= 1_000)     return `₦${(val / 1_000).toFixed(1)}K`;
+    return `₦${val}`;
+  };
+  const fmtNum = (val) => val == null ? "—" : new Intl.NumberFormat("en-NG").format(val);
+
+  const totalUsers      = stats?.users?.total;
+  const totalAgents     = stats?.agents?.total;
+  const totalRevenue    = stats?.transactions?.totalAmount ?? stats?.revenue?.total;
+  const totalProperties = stats?.properties?.total;
+  const newUsersMonth   = stats?.users?.newThisMonth   ?? stats?.users?.newToday   ?? null;
+  const newAgentsMonth  = stats?.agents?.newThisMonth  ?? stats?.agents?.newToday  ?? null;
+  const txThisMonth     = stats?.transactions?.total   ?? stats?.transactions?.count ?? null;
+  const newPropsMonth   = stats?.properties?.newThisMonth ?? stats?.properties?.newToday ?? null;
+
+  const cards = [
+    {
+      label: "All Users", value: fmtNum(totalUsers), icon: "👥", color: "#1a56db", trend: 12,
+      sub: newUsersMonth != null ? `+${fmtNum(newUsersMonth)} this month` : "Registered users",
+      spark: [30, 45, 38, 60, 55, 72, 80, 75, 90, 88],
+    },
+    {
+      label: "All Agents", value: fmtNum(totalAgents), icon: "🛡️", color: "#059669", trend: 8,
+      sub: newAgentsMonth != null ? `+${fmtNum(newAgentsMonth)} this month` : "Active agents",
+      spark: [12, 18, 14, 22, 19, 25, 21, 28, 24, 30],
+    },
+    {
+      label: "Transactions", value: fmtMoney(totalRevenue), icon: "💳", color: "#7c3aed", trend: null,
+      sub: txThisMonth != null ? `${fmtNum(txThisMonth)} this month` : "Total volume",
+      spark: [40, 55, 48, 70, 65, 82, 78, 95, 88, 105],
+    },
+    {
+      label: "Properties Listed", value: fmtNum(totalProperties), icon: "🏠", color: "#d97706", trend: 5,
+      sub: newPropsMonth != null ? `+${fmtNum(newPropsMonth)} this month` : "Total listings",
+      spark: [80, 95, 110, 100, 130, 120, 145, 155, 140, 165],
+    },
+  ];
 
   return (
-    <div style={{ padding: "32px 36px", maxWidth: 1080, margin: "0 auto" }}>
-      {/* Header */}
-      <div style={{ marginBottom: 32 }}>
-        <p style={{ margin: "0 0 4px", fontSize: 13, color: "#9ca3af" }}>
-          {time.toLocaleDateString("en-NG", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
-        </p>
-        <h1 style={{ margin: 0, fontSize: 26, fontWeight: 800, color: NAVY, fontFamily: "Poppins, sans-serif", letterSpacing: "-0.5px" }}>
-          {greeting}, Admin 👋
-        </h1>
-        <p style={{ margin: "6px 0 0", fontSize: 14, color: "#6b7280" }}>
-          Here's what's happening on Nestfind today.
-        </p>
-      </div>
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@700;800&display=swap');
 
-      {/* Stat cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 16, marginBottom: 28 }}>
-        <StatCard
-          label="Total Users"
-          value="3,842"
-          sub="+12 this week"
-          icon="👥"
-          color="#1a56db"
-          spark={[30, 45, 38, 60, 55, 72, 80, 75, 90, 88]}
-        />
-        <StatCard
-          label="Active Agents"
-          value="148"
-          sub="+3 this week"
-          icon="🛡️"
-          color="#059669"
-          spark={[12, 18, 14, 22, 19, 25, 21, 28, 24, 30]}
-        />
-        <StatCard
-          label="Properties Listed"
-          value="1,204"
-          sub="+27 this month"
-          icon="🏠"
-          color="#7c3aed"
-          spark={[80, 95, 110, 100, 130, 120, 145, 155, 140, 165]}
-        />
-        <StatCard
-          label="Pending Withdrawals"
-          value="₦8.4M"
-          sub="18 requests"
-          icon="💳"
-          color="#d97706"
-          spark={[20, 30, 25, 40, 35, 50, 45, 60, 55, 70]}
-        />
-      </div>
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(14px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .stat-card-anim { animation: fadeUp 0.4s cubic-bezier(.22,1,.36,1) both; }
 
-      {/* Middle row */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 28 }}>
-        {/* Monthly listings bar */}
-        <div
-          style={{
-            background: WHITE, borderRadius: 16, padding: "22px 24px",
-            boxShadow: "0 2px 12px rgba(0,0,0,0.06)", border: "1px solid #f3f4f6",
-          }}
-        >
-          <p style={{ margin: "0 0 16px", fontSize: 13, fontWeight: 700, color: NAVY }}>
-            Monthly Listings
+        /*
+          KEY: The dashboard must fill the height of its parent container.
+          Your layout's main content area should have height: 100% or flex: 1.
+          This component uses height: 100% + flex column to fill that space exactly.
+        */
+        .admin-dashboard {
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+          width: 100%;
+          padding: clamp(16px, 3vh, 36px) clamp(16px, 3vw, 40px);
+          box-sizing: border-box;
+          max-width: 1100px;
+          margin: 0 auto;
+          overflow: hidden;
+        }
+
+        .dash-header {
+          flex-shrink: 0;
+          margin-bottom: clamp(10px, 2vh, 24px);
+        }
+
+        .stats-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          grid-template-rows: 1fr 1fr;
+          gap: clamp(10px, 1.6vh, 20px);
+          flex: 1;       /* fills ALL remaining vertical space */
+          min-height: 0; /* critical — lets grid shrink inside flex */
+        }
+
+        .stats-grid > div {
+          min-height: 0; /* critical — lets card shrink inside grid */
+        }
+
+        /* Tablet */
+        @media (max-width: 680px) {
+          .stats-grid { gap: clamp(8px, 1.4vh, 14px); }
+        }
+
+        /* Small phone — single column, allow scroll */
+        @media (max-width: 400px) {
+          .admin-dashboard { overflow-y: auto; }
+          .stats-grid {
+            grid-template-columns: 1fr;
+            grid-template-rows: repeat(4, minmax(160px, 1fr));
+          }
+        }
+      `}</style>
+
+      <div className="admin-dashboard">
+        {/* Header */}
+        <div className="dash-header">
+          <p style={{ margin: "0 0 2px", fontSize: "clamp(11px,1vw,13px)", color: "#adb5c2", fontWeight: 500, letterSpacing: "0.05em" }}>
+            {time.toLocaleDateString("en-NG", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
           </p>
-          <BarChart
-            data={[
-              { label: "Jan", value: 42 },
-              { label: "Feb", value: 58 },
-              { label: "Mar", value: 51 },
-              { label: "Apr", value: 70 },
-              { label: "May", value: 65 },
-              { label: "Jun", value: 83 },
-              { label: "Jul", value: 77 },
-              { label: "Aug", value: 95 },
-            ]}
-          />
+          <h1 style={{
+            margin: 0, fontSize: "clamp(18px, 2.4vw, 28px)", fontWeight: 800,
+            color: NAVY, fontFamily: "Poppins, sans-serif", letterSpacing: "-0.5px", lineHeight: 1.2,
+          }}>
+            {greeting}, Admin 👋
+          </h1>
+          <p style={{ margin: "3px 0 0", fontSize: "clamp(12px, 1vw, 14px)", color: "#6b7280" }}>
+            Here's what's happening on Nestfind today.
+          </p>
         </div>
 
-        {/* User distribution donut */}
-        <div
-          style={{
-            background: WHITE, borderRadius: 16, padding: "22px 24px",
-            boxShadow: "0 2px 12px rgba(0,0,0,0.06)", border: "1px solid #f3f4f6",
-          }}
-        >
-          <p style={{ margin: "0 0 16px", fontSize: 13, fontWeight: 700, color: NAVY }}>
-            User Distribution
-          </p>
-          <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
-            <DonutChart
-              slices={[
-                { label: "Regular Users", value: 3694, color: BLUE },
-                { label: "Agents",        value: 148,  color: "#059669" },
-              ]}
-            />
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {[
-                { label: "Regular Users", value: "3,694", color: BLUE },
-                { label: "Agents",        value: "148",   color: "#059669" },
-              ].map((s) => (
-                <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ width: 10, height: 10, borderRadius: "50%", background: s.color, flexShrink: 0 }} />
-                  <span style={{ fontSize: 12.5, color: "#6b7280" }}>{s.label}</span>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: NAVY, marginLeft: "auto", paddingLeft: 16 }}>{s.value}</span>
-                </div>
-              ))}
-            </div>
+        {/* Error banner */}
+        {statsError && (
+          <div style={{
+            flexShrink: 0, marginBottom: 12, padding: "9px 16px",
+            background: "#fef2f2", border: "1px solid #fecaca",
+            borderRadius: 10, fontSize: 13, color: "#dc2626",
+            display: "flex", alignItems: "center", gap: 8,
+          }}>
+            ⚠️ Could not load live stats: {statsError}
           </div>
-        </div>
-      </div>
+        )}
 
-      {/* Recent activity */}
-      <div
-        style={{
-          background: WHITE, borderRadius: 16, padding: "22px 24px",
-          boxShadow: "0 2px 12px rgba(0,0,0,0.06)", border: "1px solid #f3f4f6",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-          <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: NAVY }}>Recent Activity</p>
-          <button
-            style={{
-              fontSize: 12, fontWeight: 600, color: BLUE, background: "none",
-              border: "none", cursor: "pointer", padding: 0,
-            }}
-          >
-            View all →
-          </button>
+        {/* 2×2 Grid — stretches to fill remaining height */}
+        <div className="stats-grid">
+          {cards.map((c, i) => (
+            <div key={c.label} className="stat-card-anim" style={{ animationDelay: `${i * 80}ms` }}>
+              <StatCard {...c} loading={statsLoading} />
+            </div>
+          ))}
         </div>
-        {TXS.map((tx, i) => (
-          <TxRow key={i} tx={tx} />
-        ))}
       </div>
-    </div>
+    </>
   );
 }

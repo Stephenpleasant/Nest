@@ -46,11 +46,33 @@ function CreateAdminPage() {
     firstName: "", lastName: "", email: "",
     phone: "", password: "", confirmPassword: "",
   });
-  const [showPw, setShowPw]         = useState(false);
+  const [showPw, setShowPw]           = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [loading, setLoading]       = useState(false);
-  const [error, setError]           = useState("");
-  const [success, setSuccess]       = useState("");
+  const [loading, setLoading]         = useState(false);
+  const [error, setError]             = useState("");
+  const [success, setSuccess]         = useState("");
+
+  // ── Admin list — GET /api/v1/admin/list ──────────────────────────────────
+  const [admins, setAdmins]           = useState([]);
+  const [listLoading, setListLoading] = useState(true);
+  const [listError, setListError]     = useState("");
+
+  const fetchAdmins = async () => {
+    setListLoading(true); setListError("");
+    try {
+      const res = await axios.get(`${API_BASE}/api/v1/admin/list`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      const data = res.data?.data ?? res.data;
+      setAdmins(Array.isArray(data) ? data : []);
+    } catch {
+      setListError("Could not load admin list.");
+    } finally {
+      setListLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchAdmins(); }, []);
 
   const passMatch = form.confirmPassword === "" || form.password === form.confirmPassword;
 
@@ -82,6 +104,7 @@ function CreateAdminPage() {
       });
       setSuccess(`Admin account for ${form.firstName} ${form.lastName} created successfully!`);
       setForm({ firstName:"", lastName:"", email:"", phone:"", password:"", confirmPassword:"" });
+      fetchAdmins(); // refresh the list
     } catch (err) {
       setError(
         err.response?.data?.message ||
@@ -237,6 +260,68 @@ function CreateAdminPage() {
               : "Create Admin Account"}
           </button>
         </form>
+      </div>
+
+      {/* ── Existing Admins — GET /api/v1/admin/list ── */}
+      <div style={{ marginTop:36, maxWidth:860 }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
+          <div>
+            <h2 style={{ margin:0, fontSize:18, fontWeight:800, color:NAVY, fontFamily:"'Poppins',sans-serif" }}>
+              Existing Admins
+            </h2>
+            <p style={{ margin:"3px 0 0", fontSize:13, color:GREY }}>
+              All administrators currently registered on the platform.
+            </p>
+          </div>
+          <button onClick={fetchAdmins}
+            style={{ padding:"8px 16px", borderRadius:9, border:`1.5px solid ${BORDER}`, background:WHITE, fontSize:13, fontWeight:600, color:NAVY, cursor:"pointer" }}>
+            ↻ Refresh
+          </button>
+        </div>
+
+        <div style={{ background:WHITE, borderRadius:16, border:`1px solid ${BORDER}`, overflow:"hidden", boxShadow:"0 2px 12px rgba(0,0,0,0.05)" }}>
+          <div style={{ display:"grid", gridTemplateColumns:"2fr 2fr 1.5fr 1fr", padding:"11px 20px", background:"#f9fafb", borderBottom:`1px solid ${BORDER}` }}>
+            {["Name","Email","Phone","Role"].map(h => (
+              <span key={h} style={{ fontSize:11, fontWeight:700, color:"#9ca3af", textTransform:"uppercase", letterSpacing:"0.07em" }}>{h}</span>
+            ))}
+          </div>
+
+          {listLoading ? (
+            <div style={{ padding:"36px 0", textAlign:"center", color:"#9ca3af", fontSize:13 }}>Loading admins…</div>
+          ) : listError ? (
+            <div style={{ padding:"28px 20px", color:"#dc2626", fontSize:13 }}>⚠️ {listError}</div>
+          ) : admins.length === 0 ? (
+            <div style={{ padding:"36px 0", textAlign:"center", color:"#9ca3af", fontSize:13 }}>No admins found.</div>
+          ) : (
+            admins.map((a, i) => {
+              const name     = (a.fullName ?? `${a.firstName ?? ""} ${a.lastName ?? ""}`.trim()) || "—";
+              const initials = name.split(" ").slice(0,2).map(w => w[0]?.toUpperCase() ?? "").join("");
+              return (
+                <div key={a._id ?? a.id ?? i}
+                  style={{ display:"grid", gridTemplateColumns:"2fr 2fr 1.5fr 1fr", padding:"13px 20px", alignItems:"center", borderBottom: i < admins.length - 1 ? "1px solid #f3f4f6" : "none", transition:"background .15s" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#fafbff"}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                >
+                  <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                    <div style={{ width:34, height:34, borderRadius:"50%", background:"linear-gradient(135deg,#1a56db,#0b1a2e)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:700, color:WHITE, flexShrink:0 }}>
+                      {initials || "A"}
+                    </div>
+                    <span style={{ fontSize:13.5, fontWeight:600, color:NAVY }}>{name}</span>
+                  </div>
+                  <span style={{ fontSize:13, color:"#374151", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                    {a.email ?? "—"}
+                  </span>
+                  <span style={{ fontSize:13, color:"#374151" }}>
+                    {a.phone ?? a.phoneNumber ?? "—"}
+                  </span>
+                  <span style={{ fontSize:11, fontWeight:700, padding:"3px 10px", borderRadius:999, background:"#eff6ff", color:BLUE, border:"1px solid #bfdbfe", display:"inline-block", textTransform:"capitalize" }}>
+                    {a.role ?? a.userType ?? "Admin"}
+                  </span>
+                </div>
+              );
+            })
+          )}
+        </div>
       </div>
     </div>
   );
