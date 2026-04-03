@@ -43,18 +43,32 @@ function useWallet() {
           ? txJson.data
           : txJson.data?.transactions || txJson.data?.history || [];
 
+        // Types that represent money coming IN to the agent
+        const creditTypes = ["escrow_release"];
+        const typeLabel = (type) => {
+          switch (type) {
+            case "bookingfee":     return "Booking Fee";
+            case "escrow_hold":    return "Escrow Hold";
+            case "escrow_release": return "Escrow Release";
+            case "commission":     return "Commission";
+            case "withdrawal":     return "Withdrawal";
+            default:               return type || "Transaction";
+          }
+        };
+
         setTransactions(
           raw.map((t, i) => ({
-            id:     t._id || t.id || i,
-            type:   t.type === "credit" ? "credit" : "debit",
-            label:  t.description || t.label || t.narration || "Transaction",
-            amount: Math.abs(t.amount || 0),
-            date:   t.createdAt
+            id:        t._id || t.id || i,
+            type:      creditTypes.includes(t.type) ? "credit" : "debit",
+            label:     t.description || t.label || t.narration || typeLabel(t.type),
+            amount:    Math.abs(t.amount || 0),
+            reference: t.reference || t.transactionNumber || null,
+            date:      t.createdAt
               ? new Date(t.createdAt).toLocaleDateString("en-GB", {
                   day: "numeric", month: "short", year: "numeric",
                 })
               : t.date || "",
-            status: t.status || "completed",
+            status: t.status || "pending",
           }))
         );
       } else {
