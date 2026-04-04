@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import AdminDashboard from "../Properties/Admindashboard";
 import AllAgentsPage  from "./Users/Allagentpage";
 import AllUsersPage   from "./Users/Alluserspage";
+import WithdrawPage   from "../Withdraw/WithdrawPage";
 import axios from "axios";
 import { Eye, EyeOff, ShieldCheck, AlertCircle, CheckCircle2 } from "lucide-react";
 
@@ -365,7 +366,7 @@ function AdminPropertiesView() {
   const [filter, setFilter]         = useState("all");
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/v1/properties/all`, {
+    fetch(`${API_BASE}/api/v1/admin/properties`, {
       headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
     })
       .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
@@ -511,12 +512,14 @@ export default function PageContent({ activeId, page }) {
       {activeId === "all-users"    && <AllUsersPage   />}
       {activeId === "properties"   && <AdminPropertiesView />}
       {activeId === "create-admin" && <CreateAdminPage />}
+      {activeId === "withdraw"     && <WithdrawPage />}
 
       {activeId !== "dashboard"    &&
        activeId !== "all-agents"   &&
        activeId !== "all-users"    &&
        activeId !== "properties"   &&
-       activeId !== "create-admin" && (
+       activeId !== "create-admin" &&
+       activeId !== "withdraw"     && (
         <div style={{ padding:40 }}>
           <div style={{ maxWidth:720 }}>
             <p style={{ fontSize:36, marginBottom:12 }}>{page.emoji}</p>
