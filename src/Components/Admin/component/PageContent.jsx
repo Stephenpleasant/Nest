@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import AdminDashboard from "../Properties/Admindashboard";
 import AllAgentsPage  from "./Users/Allagentpage";
 import AllUsersPage   from "./Users/Alluserspage";
-import WithdrawPage   from "../Withdraw/WithdrawPage";
+import WithdrawPage   from "../Withdraw/Withdrawpage";
 import axios from "axios";
 import { Eye, EyeOff, ShieldCheck, AlertCircle, CheckCircle2 } from "lucide-react";
 
