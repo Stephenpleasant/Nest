@@ -1,5 +1,5 @@
 import { useState } from "react";
-import WithdrawStats from "./Withdrawstats";
+import WithdrawStats from "./WithdrawStats";
 import WithdrawFilters from "./WithdrawFilters";
 import WithdrawTable   from "./WithdrawTable";
 import { useWithdrawals } from "./UseWithdrawals"; 
