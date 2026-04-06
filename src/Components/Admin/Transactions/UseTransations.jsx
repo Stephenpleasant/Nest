@@ -7,7 +7,7 @@ const AUTH_HEADERS = () => ({
   Authorization: `Bearer ${getToken()}`,
 });
 
-export function useWithdrawals(filters = {}) {
+export function useTransactions(filters = {}) {
   const [data, setData]       = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);
@@ -52,7 +52,7 @@ export function useWithdrawals(filters = {}) {
   return { data, loading, error, meta, refetch: fetchData };
 }
 
-export function useWithdrawStats() {
+export function useTransactionStats() {
   const [stats, setStats]     = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);

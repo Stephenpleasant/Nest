@@ -6,6 +6,7 @@ import {
   ShieldCheck,
   UserRound,
   UserPlus,
+  ArrowDownToLine,
 } from "lucide-react";
 
 export const NAV_ITEMS = [
@@ -24,8 +25,9 @@ export const NAV_ITEMS = [
       { id: "create-admin",  label: "Create Admin",  icon: UserPlus },
     ],
   },
-  { id: "properties", label: "View Properties", icon: Building2 },
-  { id: "withdraw",   label: "Withdraw",         icon: Wallet },
+  { id: "properties",  label: "View Properties", icon: Building2 },
+  { id: "transaction", label: "Transactions",    icon: Wallet },
+  { id: "withdrawals", label: "Withdrawals",     icon: ArrowDownToLine },
 ];
 
 export const USER_INFO = {
@@ -40,5 +42,6 @@ export const PAGES = {
   "all-users":    { title: "All Users",       subtitle: "View and manage every user on the platform.",  emoji: "👥" },
   "create-admin": { title: "Create Admin",    subtitle: "Register a new administrator account.",        emoji: "🔐" },
   properties:     { title: "View Properties", subtitle: "Browse all listed and available properties.",  emoji: "🏠" },
-  withdraw:       { title: "Withdraw",        subtitle: "Manage withdrawal requests and transactions.", emoji: "💳" },
+  transaction:    { title: "Transactions",    subtitle: "Manage all transactions.",                     emoji: "💳" },
+  withdrawals:    { title: "Withdrawals",     subtitle: "Manage withdrawal requests and payouts.",       emoji: "💸" },
 };

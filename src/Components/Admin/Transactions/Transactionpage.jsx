@@ -1,13 +1,13 @@
 import { useState } from "react";
-import WithdrawStats from "./WithdrawStats";
-import WithdrawFilters from "./WithdrawFilters";
-import WithdrawTable   from "./WithdrawTable";
-import { useWithdrawals } from "./UseWithdrawals"; 
+import TransactionStats from "./TransactionStats";
+import TransactionFilters from "./TransactionFilters";
+import TransactionTable   from "./TransactionTable";
+import { useTransactions } from "./UseTransations"; 
 
-export default function WithdrawPage() {
+export default function TransactionPage() {
   const [filters, setFilters] = useState({ page: 1, limit: 10 });
 
-  const { data, loading, error, meta } = useWithdrawals(filters);
+  const { data, loading, error, meta } = useTransactions(filters);
 
   const handlePageChange = (newPage) =>
     setFilters((prev) => ({ ...prev, page: newPage }));
@@ -36,7 +36,7 @@ export default function WithdrawPage() {
                 className="text-2xl font-extrabold leading-tight tracking-tight"
                 style={{ color: "#0b1a2e", fontFamily: "Poppins, sans-serif" }}
               >
-                Withdraw
+                Transactions
               </h1>
               <p className="text-sm text-gray-400 font-medium">
                 Manage withdrawal requests and transactions.
@@ -46,10 +46,10 @@ export default function WithdrawPage() {
         </div>
 
         {/* ── Summary stat cards ── */}
-        <WithdrawStats />
+        <TransactionStats />
 
         {/* ── Filter bar ── */}
-        <WithdrawFilters
+        <TransactionFilters
           filters={filters}
           onChange={handleFilterChange}
           total={meta.total}
@@ -57,7 +57,7 @@ export default function WithdrawPage() {
         />
 
         {/* ── Transactions table ── */}
-        <WithdrawTable
+        <TransactionTable
           data={data}
           loading={loading}
           error={error}

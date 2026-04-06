@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import AdminDashboard from "../Properties/Admindashboard";
 import AllAgentsPage  from "./Users/Allagentpage";
 import AllUsersPage   from "./Users/Alluserspage";
-import WithdrawPage   from "../Withdraw/Withdrawpage";
+import TransactionPage from "../Transactions/Transactionpage";
+import WithdrawPage from "../Withdraaw/WithdrawPage";
 import axios from "axios";
 import { Eye, EyeOff, ShieldCheck, AlertCircle, CheckCircle2 } from "lucide-react";
 
@@ -512,14 +513,16 @@ export default function PageContent({ activeId, page }) {
       {activeId === "all-users"    && <AllUsersPage   />}
       {activeId === "properties"   && <AdminPropertiesView />}
       {activeId === "create-admin" && <CreateAdminPage />}
-      {activeId === "withdraw"     && <WithdrawPage />}
+      {activeId === "transaction"  && <TransactionPage />}
+      {activeId === "withdrawals"  && <WithdrawPage />}
 
       {activeId !== "dashboard"    &&
        activeId !== "all-agents"   &&
        activeId !== "all-users"    &&
        activeId !== "properties"   &&
        activeId !== "create-admin" &&
-       activeId !== "withdraw"     && (
+       activeId !== "transaction"  &&
+       activeId !== "withdrawals"  && (
         <div style={{ padding:40 }}>
           <div style={{ maxWidth:720 }}>
             <p style={{ fontSize:36, marginBottom:12 }}>{page.emoji}</p>

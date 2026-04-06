@@ -1,10 +1,8 @@
-import { useWithdrawStats } from "./UseWithdrawals";
+import { useTransactionStats } from "./UseTransations";
 
 const fmtMoney = (val) => {
   if (val == null) return "—";
-  if (val >= 1_000_000) return `₦${(val / 1_000_000).toFixed(1)}M`;
-  if (val >= 1_000)     return `₦${(val / 1_000).toFixed(1)}K`;
-  return `₦${val}`;
+  return `₦${Number(val).toLocaleString("en-NG")}`;
 };
 const fmtNum = (val) => (val == null ? "—" : new Intl.NumberFormat("en-NG").format(val));
 
@@ -56,8 +54,8 @@ function SkeletonCard() {
   );
 }
 
-export default function WithdrawStats() {
-  const { stats, loading } = useWithdrawStats();
+export default function TransactionStats() {
+  const { stats, loading } = useTransactionStats();
 
   if (loading) {
     return (
