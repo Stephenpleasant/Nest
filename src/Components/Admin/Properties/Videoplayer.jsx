@@ -7,7 +7,6 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://gtimeconnect.onre
 /* Resolve relative paths uploaded by agents to absolute URLs */
 const resolveVideoUrl = (url) => {
   if (!url) return null;
-  // Handle cases where url may be an object e.g. { url: "..." } or { src: "..." }
   const str = typeof url === "string" ? url : url?.url || url?.src || null;
   if (!str || str === "null" || str === "undefined") return null;
   if (str.startsWith("http://") || str.startsWith("https://")) return str;
@@ -68,36 +67,114 @@ const VideoPlayer = ({ videoUrl, fallbackImage, title }) => {
             background: playing ? "transparent" : "linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 50%)",
             display: "flex", flexDirection: "column", justifyContent: "flex-end", transition: "background .3s",
           }}>
-            <div onClick={seek} style={{ height: 4, background: "rgba(255,255,255,0.25)", cursor: "pointer", margin: "0 0 12px" }}>
-              <div style={{ height: "100%", width: `${progress}%`, background: BLUE, transition: "width .1s" }} />
+            {/* Seek bar — larger touch target on mobile */}
+            <div
+              onClick={seek}
+              style={{
+                height: "clamp(4px, 1vw, 6px)",
+                background: "rgba(255,255,255,0.25)",
+                cursor: "pointer",
+                margin: "0 0 clamp(8px, 2vw, 12px)",
+                /* Expanded hit area for touch */
+                padding: "8px 0",
+                marginTop: -8,
+              }}
+            >
+              <div style={{ height: "clamp(4px, 1vw, 6px)", width: `${progress}%`, background: BLUE, transition: "width .1s", borderRadius: 3 }} />
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "0 20px 16px" }}>
-              <button onClick={toggle} style={{ width: 42, height: 42, borderRadius: "50%", background: "rgba(255,255,255,0.15)", backdropFilter: "blur(6px)", border: "none", cursor: "pointer", display: "grid", placeItems: "center", color: WHITE }}>
-                {playing ? <Pause size={18} /> : <Play size={18} />}
+
+            {/* Controls */}
+            <div style={{ display: "flex", alignItems: "center", gap: "clamp(8px, 2vw, 12px)", padding: "0 clamp(12px, 3vw, 20px) clamp(10px, 2vh, 16px)" }}>
+              {/* Play/Pause */}
+              <button
+                onClick={toggle}
+                style={{
+                  width: "clamp(36px, 6vw, 42px)",
+                  height: "clamp(36px, 6vw, 42px)",
+                  borderRadius: "50%",
+                  background: "rgba(255,255,255,0.15)",
+                  backdropFilter: "blur(6px)",
+                  border: "none",
+                  cursor: "pointer",
+                  display: "grid",
+                  placeItems: "center",
+                  color: WHITE,
+                  flexShrink: 0,
+                  /* Larger touch target */
+                  touchAction: "manipulation",
+                }}
+              >
+                {playing
+                  ? <Pause size="clamp(14px, 2.5vw, 18px)" />
+                  : <Play  size="clamp(14px, 2.5vw, 18px)" />
+                }
               </button>
-              <button onClick={toggleMute} style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", cursor: "pointer", display: "grid", placeItems: "center", color: WHITE }}>
-                {muted ? <VolumeX size={15} /> : <Volume2 size={15} />}
+
+              {/* Mute */}
+              <button
+                onClick={toggleMute}
+                style={{
+                  width: "clamp(32px, 5vw, 36px)",
+                  height: "clamp(32px, 5vw, 36px)",
+                  borderRadius: "50%",
+                  background: "rgba(255,255,255,0.1)",
+                  border: "none",
+                  cursor: "pointer",
+                  display: "grid",
+                  placeItems: "center",
+                  color: WHITE,
+                  flexShrink: 0,
+                  touchAction: "manipulation",
+                }}
+              >
+                {muted
+                  ? <VolumeX size="clamp(12px, 2vw, 15px)" />
+                  : <Volume2 size="clamp(12px, 2vw, 15px)" />
+                }
               </button>
+
               <div style={{ flex: 1 }} />
-              <span style={{ color: "rgba(255,255,255,0.8)", fontSize: 12, fontWeight: 500 }}>🎬 Property Tour</span>
+              <span style={{ color: "rgba(255,255,255,0.8)", fontSize: "clamp(10px, 1.5vw, 12px)", fontWeight: 500, whiteSpace: "nowrap" }}>🎬 Property Tour</span>
             </div>
           </div>
+
+          {/* Centre play button (only when paused) */}
           {!playing && (
-            <button onClick={toggle} style={{
-              position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
-              width: 72, height: 72, borderRadius: "50%",
-              background: "rgba(26,86,219,0.85)", backdropFilter: "blur(6px)",
-              border: "3px solid rgba(255,255,255,0.5)", cursor: "pointer",
-              display: "grid", placeItems: "center", color: WHITE,
-              boxShadow: "0 8px 32px rgba(26,86,219,0.5)", transition: "transform .2s",
-            }}>
-              <Play size={28} style={{ marginLeft: 4 }} />
+            <button
+              onClick={toggle}
+              style={{
+                position: "absolute",
+                top: "50%", left: "50%",
+                transform: "translate(-50%,-50%)",
+                width: "clamp(56px, 10vw, 72px)",
+                height: "clamp(56px, 10vw, 72px)",
+                borderRadius: "50%",
+                background: "rgba(26,86,219,0.85)",
+                backdropFilter: "blur(6px)",
+                border: "3px solid rgba(255,255,255,0.5)",
+                cursor: "pointer",
+                display: "grid",
+                placeItems: "center",
+                color: WHITE,
+                boxShadow: "0 8px 32px rgba(26,86,219,0.5)",
+                transition: "transform .2s",
+                touchAction: "manipulation",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.transform = "translate(-50%,-50%) scale(1.08)"; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = "translate(-50%,-50%) scale(1)"; }}
+            >
+              <Play size="clamp(22px, 4vw, 28px)" style={{ marginLeft: 3 }} />
             </button>
           )}
         </>
       ) : (
+        /* Fallback image state */
         <>
-          <img src={fallbackImage} alt={title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <img
+            src={fallbackImage}
+            alt={title}
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
           <div style={{
             position: "absolute", inset: 0,
             background: "linear-gradient(to top, rgba(7,20,34,0.7) 0%, rgba(7,20,34,0.2) 60%, transparent 100%)",
@@ -105,14 +182,19 @@ const VideoPlayer = ({ videoUrl, fallbackImage, title }) => {
           }}>
             <div style={{ textAlign: "center" }}>
               <div style={{
-                width: 72, height: 72, borderRadius: "50%",
-                background: "rgba(26,86,219,0.8)", backdropFilter: "blur(6px)",
+                width: "clamp(56px, 10vw, 72px)",
+                height: "clamp(56px, 10vw, 72px)",
+                borderRadius: "50%",
+                background: "rgba(26,86,219,0.8)",
+                backdropFilter: "blur(6px)",
                 border: "3px solid rgba(255,255,255,0.4)",
-                display: "grid", placeItems: "center", margin: "0 auto 12px",
+                display: "grid",
+                placeItems: "center",
+                margin: "0 auto 12px",
               }}>
-                <Play size={28} color={WHITE} style={{ marginLeft: 4 }} />
+                <Play size="clamp(22px, 4vw, 28px)" color={WHITE} style={{ marginLeft: 3 }} />
               </div>
-              <p style={{ color: WHITE, fontSize: 13, fontWeight: 600, opacity: .85 }}>Video Tour Coming Soon</p>
+              <p style={{ color: WHITE, fontSize: "clamp(11px, 1.5vw, 13px)", fontWeight: 600, opacity: .85 }}>Video Tour Coming Soon</p>
             </div>
           </div>
         </>

@@ -2,7 +2,6 @@ import { Settings, LogOut } from "lucide-react";
 import { USER_INFO } from "./NavConfig";
 
 export default function NavFooter({ onLogout }) {
-  // Read real user info from localStorage if available
   const stored = (() => {
     try { return JSON.parse(localStorage.getItem("user") || localStorage.getItem("nestfind_user") || "{}"); }
     catch { return {}; }
@@ -28,13 +27,13 @@ export default function NavFooter({ onLogout }) {
         {/* Avatar */}
         <div
           style={{
-            width: 34, height: 34, borderRadius: "50%",
+            width: 36, height: 36, borderRadius: "50%",
             background: "linear-gradient(135deg, #1a56db, #0b1a2e)",
             display: "flex", alignItems: "center", justifyContent: "center",
             flexShrink: 0,
           }}
         >
-          <span style={{ fontSize: 11, fontWeight: 700, color: "#fff" }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: "#fff" }}>
             {initials}
           </span>
         </div>
@@ -53,17 +52,18 @@ export default function NavFooter({ onLogout }) {
           </p>
         </div>
 
-        {/* Settings icon */}
+        {/* Settings icon — hidden on very narrow sidebars */}
         <Settings size={15} color="#9ca3af" strokeWidth={1.8} style={{ flexShrink: 0 }} />
 
-        {/* Logout button */}
+        {/* Logout button — larger tap target */}
         <button
           onClick={onLogout}
           title="Sign out"
           style={{
             background: "transparent", border: "none", cursor: "pointer",
-            padding: 5, borderRadius: 8, display: "grid", placeItems: "center",
+            padding: 8, borderRadius: 8, display: "grid", placeItems: "center",
             color: "#9ca3af", transition: "all 0.18s", flexShrink: 0,
+            minWidth: 36, minHeight: 36, // bigger tap target for mobile
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.background = "#fef2f2";
@@ -74,7 +74,7 @@ export default function NavFooter({ onLogout }) {
             e.currentTarget.style.color = "#9ca3af";
           }}
         >
-          <LogOut size={15} strokeWidth={1.8} />
+          <LogOut size={16} strokeWidth={1.8} />
         </button>
       </div>
     </div>

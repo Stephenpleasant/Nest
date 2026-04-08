@@ -24,7 +24,8 @@ export default function NavItem({ item, activeId, onSelect }) {
           display: "flex",
           alignItems: "center",
           gap: 12,
-          padding: "11px 14px",
+          // Taller padding for easier mobile tapping
+          padding: "13px 14px",
           borderRadius: 12,
           width: "100%",
           textAlign: "left",
@@ -33,12 +34,14 @@ export default function NavItem({ item, activeId, onSelect }) {
           background: isActive && !hasChildren ? "#eff6ff" : "transparent",
           transition: "all 0.18s",
           position: "relative",
+          // Ensure minimum touch target height
+          minHeight: 48,
         }}
         onMouseEnter={(e) => {
           if (!(isActive && !hasChildren)) e.currentTarget.style.background = "#f9fafb";
         }}
         onMouseLeave={(e) => {
-          if (!(isActive && !hasChildren)) e.currentTarget.style.background = "transparent";
+          if (!(isActive && !hasChildren)) e.currentTarget.style.background = isActive && !hasChildren ? "#eff6ff" : "transparent";
         }}
       >
         {/* Left active bar */}
@@ -75,6 +78,18 @@ export default function NavItem({ item, activeId, onSelect }) {
         >
           {item.label}
         </span>
+
+        {/* Badge */}
+        {item.badge && (
+          <span style={{
+            background: "#1a56db", color: "#fff",
+            fontSize: 10, fontWeight: 700,
+            padding: "2px 7px", borderRadius: 999,
+            flexShrink: 0,
+          }}>
+            {item.badge}
+          </span>
+        )}
 
         {/* Chevron for dropdown */}
         {hasChildren && (

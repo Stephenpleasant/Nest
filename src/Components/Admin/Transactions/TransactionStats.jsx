@@ -13,7 +13,6 @@ const CARDS_CONFIG = (stats) => [
     icon:  "💳",
     color: "#1a56db",
     sub:   "All time records",
-    accent: "bg-blue-50 text-blue-700",
   },
   {
     label: "Total Volume",
@@ -21,7 +20,6 @@ const CARDS_CONFIG = (stats) => [
     icon:  "💰",
     color: "#059669",
     sub:   "Cumulative amount",
-    accent: "bg-emerald-50 text-emerald-700",
   },
   {
     label: "Successful",
@@ -29,7 +27,6 @@ const CARDS_CONFIG = (stats) => [
     icon:  "✅",
     color: "#7c3aed",
     sub:   "Completed payouts",
-    accent: "bg-violet-50 text-violet-700",
   },
   {
     label: "Agent Transactions",
@@ -37,19 +34,18 @@ const CARDS_CONFIG = (stats) => [
     icon:  "🛡️",
     color: "#d97706",
     sub:   "Agent-only activity",
-    accent: "bg-amber-50 text-amber-700",
   },
 ];
 
 function SkeletonCard() {
   return (
-    <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm animate-pulse">
-      <div className="flex items-center justify-between mb-4">
-        <div className="w-11 h-11 rounded-xl bg-gray-100" />
-        <div className="w-20 h-3 rounded bg-gray-100" />
+    <div style={{ background: "#fff", borderRadius: 16, padding: "18px 20px", border: "1px solid #f3f4f6", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+        <div style={{ width: 44, height: 44, borderRadius: 12, background: "#f3f4f6" }} />
+        <div style={{ width: 80, height: 10, borderRadius: 99, background: "#f3f4f6" }} />
       </div>
-      <div className="w-24 h-8 rounded-lg bg-gray-100 mb-2" />
-      <div className="w-32 h-3 rounded bg-gray-100" />
+      <div style={{ width: 90, height: 28, borderRadius: 8, background: "#f3f4f6", marginBottom: 8 }} />
+      <div style={{ width: 120, height: 10, borderRadius: 99, background: "#f3f4f6" }} />
     </div>
   );
 }
@@ -57,64 +53,68 @@ function SkeletonCard() {
 export default function TransactionStats() {
   const { stats, loading } = useTransactionStats();
 
-  if (loading) {
-    return (
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {[0, 1, 2, 3].map((i) => <SkeletonCard key={i} />)}
-      </div>
-    );
-  }
-
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      {CARDS_CONFIG(stats).map((card, i) => (
-        <div
-          key={card.label}
-          className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm
-                     hover:-translate-y-1 hover:shadow-md transition-all duration-200
-                     relative overflow-hidden group"
-          style={{ animationDelay: `${i * 80}ms`, animation: "fadeUp 0.4s ease both" }}
-        >
-          {/* Top accent bar */}
-          <div
-            className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl"
-            style={{ background: `linear-gradient(90deg, ${card.color}, ${card.color}88)` }}
-          />
-
-          {/* Bg circle decoration */}
-          <div
-            className="absolute -top-6 -right-6 w-24 h-24 rounded-full pointer-events-none"
-            style={{ background: card.color + "0a" }}
-          />
-
-          <div className="flex items-center justify-between mb-3">
-            <div
-              className="w-11 h-11 rounded-xl flex items-center justify-center text-xl border"
-              style={{ background: card.color + "15", borderColor: card.color + "25" }}
-            >
-              {card.icon}
-            </div>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-              {card.label}
-            </span>
-          </div>
-
-          <p
-            className="text-3xl font-extrabold leading-none mb-1 tracking-tight"
-            style={{ color: "#0b1a2e", fontFamily: "Poppins, sans-serif" }}
-          >
-            {card.value}
-          </p>
-          <p className="text-xs text-gray-400 font-medium">{card.sub}</p>
-        </div>
-      ))}
-
+    <>
       <style>{`
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(12px); }
           to   { opacity: 1; transform: translateY(0); }
         }
+        .tx-stats-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 12px;
+          margin-bottom: 20px;
+        }
+        @media (min-width: 900px) {
+          .tx-stats-grid { grid-template-columns: repeat(4, 1fr); }
+        }
       `}</style>
-    </div>
+
+      <div className="tx-stats-grid">
+        {loading
+          ? [0,1,2,3].map((i) => <SkeletonCard key={i} />)
+          : CARDS_CONFIG(stats).map((card, i) => (
+            <div
+              key={card.label}
+              style={{
+                background: "#fff",
+                borderRadius: 16,
+                padding: "16px 18px",
+                border: "1px solid #f3f4f6",
+                boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
+                position: "relative",
+                overflow: "hidden",
+                transition: "transform 0.2s, box-shadow 0.2s",
+                animationDelay: `${i * 80}ms`,
+                animation: "fadeUp 0.4s ease both",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.1)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.05)"; }}
+            >
+              {/* Top accent bar */}
+              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, borderRadius: "16px 16px 0 0", background: `linear-gradient(90deg, ${card.color}, ${card.color}88)` }} />
+
+              {/* Background circle decoration */}
+              <div style={{ position: "absolute", top: -20, right: -20, width: 80, height: 80, borderRadius: "50%", background: card.color + "0a", pointerEvents: "none" }} />
+
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                <div style={{ width: 42, height: 42, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, background: card.color + "15", border: `1px solid ${card.color}25` }}>
+                  {card.icon}
+                </div>
+                <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#9ca3af" }}>
+                  {card.label}
+                </span>
+              </div>
+
+              <p style={{ fontSize: 26, fontWeight: 800, lineHeight: 1, margin: "0 0 4px", color: "#0b1a2e", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.5px" }}>
+                {card.value}
+              </p>
+              <p style={{ fontSize: 11, color: "#9ca3af", fontWeight: 500, margin: 0 }}>{card.sub}</p>
+            </div>
+          ))
+        }
+      </div>
+    </>
   );
 }
