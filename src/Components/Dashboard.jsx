@@ -90,8 +90,8 @@ const Spinner = () => (
 /* ═══════════════════════════════════════════════════════════════════════════
    AUTH MODAL  (mirrors Auth.jsx logic exactly)
 ═══════════════════════════════════════════════════════════════════════════ */
-function AuthModal({ onClose }) {
-  const [tab, setTab]         = useState("signin");   // "signin" | "register"
+function AuthModal({ onClose, defaultTab = "signin" }) {
+  const [tab, setTab]         = useState(defaultTab);   // "signin" | "register"
   const [userType, setUT]     = useState("user");     // "user" | "agent"
   const [form, setForm]       = useState(EMPTY);
   const [showPw, setShowPw]   = useState(false);
@@ -533,6 +533,7 @@ export default function NestFind() {
   const navigate = useNavigate();
 
   const [modal, setModal]         = useState(false);
+  const [modalTab, setModalTab]   = useState("signin");
   const [scrolled, setScrolled]   = useState(false);
   const [filterType, setFilter]   = useState("All");
   const [openFaq, setOpenFaq]     = useState(null);
@@ -568,7 +569,12 @@ export default function NestFind() {
   // Logged-in users go straight to their dashboard; guests open the auth modal
   const handleCTA = () => {
     if (loggedIn) navigate(getDashboardPath());
-    else setModal(true);
+    else { setModalTab("signin"); setModal(true); }
+  };
+
+  const handleSignUp = () => {
+    if (loggedIn) navigate(getDashboardPath());
+    else { setModalTab("register"); setModal(true); }
   };
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3500); };
@@ -610,26 +616,19 @@ export default function NestFind() {
           </div>
 
           <div className="hidden md:flex items-center gap-3">
-            {loggedIn ? (
-              <button onClick={handleCTA}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-semibold shadow-lg shadow-blue-500/30 transition-all">
-                Go to Dashboard
-              </button>
-            ) : (
-              <>
-                <button onClick={handleCTA}
-                  className="text-white border border-white/30 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-white/10 transition-all">Log In</button>
-                <button onClick={handleCTA}
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-lg shadow-blue-500/30 transition-all">Sign Up</button>
-              </>
-            )}
+            <button onClick={handleCTA}
+              className="text-white border border-white/30 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-white/10 transition-all">Log In</button>
+            <button onClick={handleSignUp}
+              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-lg shadow-blue-500/30 transition-all">Sign Up</button>
           </div>
 
-          {/* Mobile: button */}
-          <button className="md:hidden bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all"
-            onClick={handleCTA}>
-            {loggedIn ? "Dashboard" : "Sign In"}
-          </button>
+          {/* Mobile: buttons */}
+          <div className="md:hidden flex items-center gap-2">
+            <button className="text-white border border-white/30 px-3 py-2 rounded-lg text-sm font-semibold hover:bg-white/10 transition-all"
+              onClick={handleCTA}>Log In</button>
+            <button className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-semibold transition-all"
+              onClick={handleSignUp}>Sign Up</button>
+          </div>
         </div>
       </nav>
 
@@ -714,7 +713,7 @@ export default function NestFind() {
       </section>
 
       {/* ── HOW IT WORKS ── */}
-      <HowItWorks onSignUp={handleCTA} />
+      <HowItWorks onSignUp={handleSignUp} />
 
       {/* ── FEATURES ── */}
       <section id="features" className="py-12 sm:py-20 bg-[#0a1628] relative overflow-hidden">
@@ -760,9 +759,9 @@ export default function NestFind() {
                 <div className="p-6 sm:p-8 flex flex-col justify-center">
                   <div className="text-blue-600 font-bold text-lg mb-2">{role}</div>
                   <p className="text-gray-500 text-sm mb-5">{desc}</p>
-                  <button onClick={handleCTA}
+                  <button onClick={handleSignUp}
                     className="self-start bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl text-sm font-semibold transition-all">
-                    {loggedIn ? "Go to Dashboard" : "Get Started"}
+                    Get Started
                   </button>
                 </div>
               </div>
@@ -852,9 +851,9 @@ export default function NestFind() {
             <h2 className="text-2xl sm:text-3xl font-black text-white">Ready to make House Inspection</h2>
             <p className="text-blue-200 text-base sm:text-lg">Booking, easy and safe?</p>
           </div>
-          <button onClick={handleCTA}
+          <button onClick={handleSignUp}
             className="bg-white text-blue-700 px-6 sm:px-8 py-3 rounded-xl font-bold hover:bg-blue-50 transition-all whitespace-nowrap w-full sm:w-auto">
-            {loggedIn ? "Go to Dashboard" : "Get started"}
+            Get Started
           </button>
         </div>
       </section>
@@ -876,7 +875,7 @@ export default function NestFind() {
       </footer>
 
       {/* ── AUTH MODAL — only shown to guests ── */}
-      {modal && !loggedIn && <AuthModal onClose={handleModalClose}/>}
+      {modal && <AuthModal onClose={handleModalClose} defaultTab={modalTab}/>}
     </div>
   );
 }

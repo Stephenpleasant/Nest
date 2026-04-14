@@ -1,32 +1,28 @@
 import { useState } from "react";
 import SettingsCard from "./SettingsCard";
+import { useSettings } from "./Settingscontext";
 
 export default function ProfileSettings() {
-  const [form, setForm] = useState({
-    firstName: "Admin",
-    lastName: "User",
-    email: "admin@nestfind.com",
-    phone: "+234 800 000 0000",
-    role: "superadmin",
-    bio: "Platform administrator for Nestfind.",
-  });
+  const { settings, updateSettings } = useSettings();
+  const [form,  setForm]  = useState({ ...settings.profile });
   const [saved, setSaved] = useState(false);
 
   const handleChange = (e) =>
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
   const handleSave = () => {
+    updateSettings({ profile: form });
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   };
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4 sm:gap-5">
       {/* Avatar */}
       <SettingsCard title="Profile Photo">
-        <div className="flex items-center gap-5">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-5">
           <div className="w-16 h-16 rounded-full bg-[#0b1a2e] flex items-center justify-center text-white text-xl font-bold font-['Poppins',sans-serif] shrink-0">
-            AU
+            {form.firstName?.[0]}{form.lastName?.[0]}
           </div>
           <div>
             <button className="px-4 py-2 bg-[#1a56db] text-white text-sm font-semibold rounded-xl hover:bg-[#1444b8] transition-colors">
@@ -39,7 +35,7 @@ export default function ProfileSettings() {
 
       {/* Personal info */}
       <SettingsCard title="Personal Information">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="First Name" name="firstName" value={form.firstName} onChange={handleChange} />
           <Field label="Last Name"  name="lastName"  value={form.lastName}  onChange={handleChange} />
           <Field label="Email"      name="email"     value={form.email}     onChange={handleChange} type="email" />
@@ -62,10 +58,10 @@ export default function ProfileSettings() {
           />
         </div>
 
-        <div className="mt-5 flex items-center gap-3">
+        <div className="mt-5 flex flex-col sm:flex-row items-start sm:items-center gap-3">
           <button
             onClick={handleSave}
-            className="px-6 py-2.5 bg-[#1a56db] text-white text-sm font-semibold rounded-xl hover:bg-[#1444b8] transition-colors"
+            className="w-full sm:w-auto px-6 py-2.5 bg-[#1a56db] text-white text-sm font-semibold rounded-xl hover:bg-[#1444b8] transition-colors"
           >
             Save Changes
           </button>
