@@ -136,7 +136,7 @@ export default function Sidebar({ activeId, onSelect }) {
           </ul>
         </nav>
 
-        <NavFooter onLogout={() => { setMobileOpen(false); setShowLogout(true); }} />
+        <NavFooter onLogout={() => { setMobileOpen(false); setShowLogout(true); }} onSelect={handleSelect} />
       </aside>
 
       {/* ── Responsive styles ──────────────────────────────────────── */}

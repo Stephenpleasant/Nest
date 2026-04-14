@@ -1,10 +1,29 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Eye, EyeOff, Lock, Mail, User, Phone, MapPin, Search,
   Star, Check, Plus, X, Menu, Home, Building, Building2,
   Shield, CreditCard, Users, TrendingUp, Heart, AlertCircle,
   BarChart2, MessageSquare, ClipboardList, PlusSquare, Calendar
 } from "lucide-react";
+
+/* ─── Auth helpers ───────────────────────────────────────────────────────── */
+const getStoredUser = () => {
+  try { return JSON.parse(localStorage.getItem("user") || "{}"); } catch { return {}; }
+};
+const getIsLoggedIn = () => {
+  try {
+    const token = localStorage.getItem("token");
+    const user  = getStoredUser();
+    return !!(token && token !== "undefined" && token !== "null" && user && Object.keys(user).length);
+  } catch { return false; }
+};
+const getDashboardPath = () => {
+  const user = getStoredUser();
+  if (user.userType === "admin") return "/admin";
+  if (user.userType === "agent") return "/agent-dashboard";
+  return "/dashboard";
+};
 
 /* ─── Nigerian States ────────────────────────────────────────────────────── */
 const NIGERIAN_STATES = [
@@ -511,6 +530,7 @@ function HowItWorks({ onSignUp }) {
 }
 
 export default function NestFind() {
+  const navigate = useNavigate();
 
   const [modal, setModal]         = useState(false);
   const [scrolled, setScrolled]   = useState(false);
@@ -519,12 +539,20 @@ export default function NestFind() {
   const [liked, setLiked]         = useState({});
   const [toast, setToast]         = useState(null);
   const [heroIdx, setHeroIdx]     = useState(0);
+  const [loggedIn, setLoggedIn]   = useState(getIsLoggedIn);
 
   const heroImgs = [
     "https://images.unsplash.com/photo-1613977257363-707ba9348227?w=1400&q=80",
     "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1400&q=80",
     "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1400&q=80",
   ];
+
+  // Stay in sync if user logs in/out in another tab
+  useEffect(() => {
+    const sync = () => setLoggedIn(getIsLoggedIn());
+    window.addEventListener("storage", sync);
+    return () => window.removeEventListener("storage", sync);
+  }, []);
 
   useEffect(() => {
     const t = setInterval(() => setHeroIdx(i => (i+1) % heroImgs.length), 4500);
@@ -537,6 +565,12 @@ export default function NestFind() {
     return () => window.removeEventListener("scroll", fn);
   }, []);
 
+  // Logged-in users go straight to their dashboard; guests open the auth modal
+  const handleCTA = () => {
+    if (loggedIn) navigate(getDashboardPath());
+    else setModal(true);
+  };
+
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3500); };
 
   const scrollTo = (id) => {
@@ -545,8 +579,8 @@ export default function NestFind() {
 
   const handleModalClose = (reason) => {
     setModal(false);
-    if (reason === "login_success") showToast("Welcome back! You're now signed in. 🎉");
-    if (reason === "verified")      showToast("Email verified! Your account is ready. 🎉");
+    if (reason === "login_success") { setLoggedIn(true); showToast("Welcome back! You're now signed in. 🎉"); }
+    if (reason === "verified")      { setLoggedIn(true); showToast("Email verified! Your account is ready. 🎉"); }
   };
 
   const filtered = filterType === "All" ? DEMO_PROPERTIES : DEMO_PROPERTIES.filter(p => p.type === filterType);
@@ -576,16 +610,25 @@ export default function NestFind() {
           </div>
 
           <div className="hidden md:flex items-center gap-3">
-            <button onClick={() => setModal(true)}
-              className="text-white border border-white/30 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-white/10 transition-all">Log In</button>
-            <button onClick={() => setModal(true)}
-              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-lg shadow-blue-500/30 transition-all">Sign Up</button>
+            {loggedIn ? (
+              <button onClick={handleCTA}
+                className="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-semibold shadow-lg shadow-blue-500/30 transition-all">
+                Go to Dashboard
+              </button>
+            ) : (
+              <>
+                <button onClick={handleCTA}
+                  className="text-white border border-white/30 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-white/10 transition-all">Log In</button>
+                <button onClick={handleCTA}
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-lg shadow-blue-500/30 transition-all">Sign Up</button>
+              </>
+            )}
           </div>
 
-          {/* Mobile: Sign In button */}
+          {/* Mobile: button */}
           <button className="md:hidden bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all"
-            onClick={() => setModal(true)}>
-            Sign In
+            onClick={handleCTA}>
+            {loggedIn ? "Dashboard" : "Sign In"}
           </button>
         </div>
       </nav>
@@ -671,7 +714,7 @@ export default function NestFind() {
       </section>
 
       {/* ── HOW IT WORKS ── */}
-      <HowItWorks onSignUp={() => setModal(true)} />
+      <HowItWorks onSignUp={handleCTA} />
 
       {/* ── FEATURES ── */}
       <section id="features" className="py-12 sm:py-20 bg-[#0a1628] relative overflow-hidden">
@@ -717,9 +760,9 @@ export default function NestFind() {
                 <div className="p-6 sm:p-8 flex flex-col justify-center">
                   <div className="text-blue-600 font-bold text-lg mb-2">{role}</div>
                   <p className="text-gray-500 text-sm mb-5">{desc}</p>
-                  <button onClick={() => setModal(true)}
+                  <button onClick={handleCTA}
                     className="self-start bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl text-sm font-semibold transition-all">
-                    Get Started
+                    {loggedIn ? "Go to Dashboard" : "Get Started"}
                   </button>
                 </div>
               </div>
@@ -809,9 +852,9 @@ export default function NestFind() {
             <h2 className="text-2xl sm:text-3xl font-black text-white">Ready to make House Inspection</h2>
             <p className="text-blue-200 text-base sm:text-lg">Booking, easy and safe?</p>
           </div>
-          <button onClick={() => setModal(true)}
+          <button onClick={handleCTA}
             className="bg-white text-blue-700 px-6 sm:px-8 py-3 rounded-xl font-bold hover:bg-blue-50 transition-all whitespace-nowrap w-full sm:w-auto">
-            Get started
+            {loggedIn ? "Go to Dashboard" : "Get started"}
           </button>
         </div>
       </section>
@@ -832,8 +875,8 @@ export default function NestFind() {
         </div>
       </footer>
 
-      {/* ── AUTH MODAL ── */}
-      {modal && <AuthModal onClose={handleModalClose}/>}
+      {/* ── AUTH MODAL — only shown to guests ── */}
+      {modal && !loggedIn && <AuthModal onClose={handleModalClose}/>}
     </div>
   );
 }

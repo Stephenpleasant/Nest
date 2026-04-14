@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, BookOpen, User, Settings, HelpCircle, LogOut } from "lucide-react";
+import { Home, BookOpen, User, Settings, LogOut } from "lucide-react";
 import LogoutModal from "../LogoutModal";
 
 const NAV_ITEMS = [
@@ -8,7 +8,6 @@ const NAV_ITEMS = [
   { to: "/bookings",   icon: BookOpen,   label: "My Bookings" },
   { to: "/profile",    icon: User,       label: "Profile"     },
   { to: "/settings",   icon: Settings,   label: "Settings"    },
-  { to: "/support",    icon: HelpCircle, label: "Support"     },
 ];
 
 // Works for BOTH users (mobileOpen/setMobileOpen props)

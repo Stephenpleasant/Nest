@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
-  Home, BookOpen, User, Settings, HelpCircle,
+  Home, BookOpen, User, Settings,
   LogOut, Menu, MapPin, Search, ChevronLeft, ChevronRight,
   ChevronDown, X,
 } from "lucide-react";
@@ -18,7 +18,7 @@ const NAV_ITEMS = [
   { to: "/bookings", icon: BookOpen, label: "My Bookings" },
   { to: "/profile", icon: User, label: "Profile" },
   { to: "/settings", icon: Settings, label: "Settings" },
-  { to: "/support", icon: HelpCircle, label: "Support" },
+
 ];
 
 function Sidebar({ mobileOpen, setMobileOpen }) {

@@ -5,6 +5,7 @@ import AllAgentsPage  from "./Users/Allagentpage";
 import AllUsersPage   from "./Users/Alluserspage";
 import TransactionPage from "../Transactions/Transactionpage";
 import WithdrawPage from "../Withdraaw/WithdrawPage";
+import AdminSettings from "../Settings/Adminsettings";
 import axios from "axios";
 import { Eye, EyeOff, ShieldCheck, AlertCircle, CheckCircle2 } from "lucide-react";
 
@@ -400,6 +401,7 @@ export default function PageContent({ activeId, page }) {
         {activeId === "create-admin" && <CreateAdminPage />}
         {activeId === "transaction"  && <TransactionPage />}
         {activeId === "withdrawals"  && <WithdrawPage />}
+        {activeId === "settings"     && <AdminSettings />}
 
         {activeId !== "dashboard"    &&
          activeId !== "all-agents"   &&
@@ -407,7 +409,8 @@ export default function PageContent({ activeId, page }) {
          activeId !== "properties"   &&
          activeId !== "create-admin" &&
          activeId !== "transaction"  &&
-         activeId !== "withdrawals"  && (
+         activeId !== "withdrawals"  &&
+         activeId !== "settings"     && (
           <div className="nf-fallback-wrap">
             <div style={{ maxWidth:720 }}>
               <p style={{ fontSize:36, marginBottom:12 }}>{page.emoji}</p>

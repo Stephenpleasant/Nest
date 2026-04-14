@@ -1,7 +1,7 @@
 import { Settings, LogOut } from "lucide-react";
 import { USER_INFO } from "./NavConfig";
 
-export default function NavFooter({ onLogout }) {
+export default function NavFooter({ onLogout, onSelect }) {
   const stored = (() => {
     try { return JSON.parse(localStorage.getItem("user") || localStorage.getItem("nestfind_user") || "{}"); }
     catch { return {}; }
@@ -52,8 +52,27 @@ export default function NavFooter({ onLogout }) {
           </p>
         </div>
 
-        {/* Settings icon — hidden on very narrow sidebars */}
-        <Settings size={15} color="#9ca3af" strokeWidth={1.8} style={{ flexShrink: 0 }} />
+        {/* Settings icon */}
+        <button
+          onClick={() => onSelect?.("settings")}
+          title="Settings"
+          style={{
+            background: "transparent", border: "none", cursor: "pointer",
+            padding: 8, borderRadius: 8, display: "grid", placeItems: "center",
+            color: "#9ca3af", transition: "all 0.18s", flexShrink: 0,
+            minWidth: 36, minHeight: 36,
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "#eff6ff";
+            e.currentTarget.style.color = "#1a56db";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "transparent";
+            e.currentTarget.style.color = "#9ca3af";
+          }}
+        >
+          <Settings size={15} strokeWidth={1.8} />
+        </button>
 
         {/* Logout button — larger tap target */}
         <button

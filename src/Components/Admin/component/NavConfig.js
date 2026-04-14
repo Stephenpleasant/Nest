@@ -7,6 +7,7 @@ import {
   UserRound,
   UserPlus,
   ArrowDownToLine,
+  Settings,
 } from "lucide-react";
 
 export const NAV_ITEMS = [
@@ -28,6 +29,7 @@ export const NAV_ITEMS = [
   { id: "properties",  label: "View Properties", icon: Building2 },
   { id: "transaction", label: "Transactions",    icon: Wallet },
   { id: "withdrawals", label: "Withdrawals",     icon: ArrowDownToLine },
+  { id: "settings",   label: "Settings",        icon: Settings },
 ];
 
 export const USER_INFO = {
@@ -44,4 +46,5 @@ export const PAGES = {
   properties:     { title: "View Properties", subtitle: "Browse all listed and available properties.",  emoji: "🏠" },
   transaction:    { title: "Transactions",    subtitle: "Manage all transactions.",                     emoji: "💳" },
   withdrawals:    { title: "Withdrawals",     subtitle: "Manage withdrawal requests and payouts.",       emoji: "💸" },
+  settings:       { title: "Settings",        subtitle: "Manage your account and platform preferences.", emoji: "⚙️" },
 };

@@ -20,7 +20,7 @@ import Settings           from './Components/Users/Settings/Setting'
 import AdminSidebar       from './Components/Admin/component/Navbar'
 import AdminPageContent   from './Components/Admin/component/PageContent'
 import { PAGES }          from './Components/Admin/component/NavConfig'
-import AdminAuth from './Adminauth'
+import AdminAuth          from './Adminauth'
 
 const NAV_W = 260
 
@@ -64,7 +64,6 @@ const getRedirectPath = () => {
 // ── Protected Route ───────────────────────────────────────────────────────────
 function ProtectedRoute({ children, agentOnly = false, adminOnly = false }) {
   if (!isAuthenticated()) {
-    // Redirect admins to admin-login instead of the general login page
     if (adminOnly) return <Navigate to="/admin-login" replace />
     return <Navigate to="/" replace />
   }
@@ -117,7 +116,7 @@ function AgentLayout({ children }) {
 
 // ── Settings Layout ───────────────────────────────────────────────────────────
 function SettingsLayout() {
-  const navigate     = useNavigate()
+  const navigate    = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
   const user   = getUser()
   const isAgent = user?.userType === 'agent'
@@ -171,13 +170,10 @@ function App() {
     <BrowserRouter>
       <Routes>
 
-        {/* ── Landing page ── */}
-        <Route
-          path="/"
-          element={isAuthenticated() ? <Navigate to={getRedirectPath()} replace /> : <LandingPage />}
-        />
+        {/* ── Landing page — always shown regardless of auth state ── */}
+        <Route path="/" element={<LandingPage />} />
 
-        {/* ── Admin login / register ── */}
+        {/* ── Admin login ── */}
         <Route
           path="/admin-login"
           element={isAdmin() ? <Navigate to="/admin" replace /> : <AdminAuth />}
