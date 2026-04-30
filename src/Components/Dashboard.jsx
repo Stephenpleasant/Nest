@@ -822,7 +822,7 @@ export default function GHOUSECONNECT() {
             {/* Right: masked shaped image */}
             <div className="relative flex items-center justify-center h-72 sm:h-96 md:h-[480px]">
               <img
-                src="public\Mask group.png"
+                src="/Mask group.png"
                 alt="Luxury property"
                 className="w-full h-full object-contain drop-shadow-2xl"
                 style={{ maxHeight: "480px" }}
@@ -836,7 +836,7 @@ export default function GHOUSECONNECT() {
             {/* Left: masked shaped image (shown second on mobile) */}
             <div className="relative flex items-center justify-center h-72 sm:h-96 md:h-[480px] order-2 md:order-1">
               <img
-                src="public\Mask group (1).png"
+                src="/Mask group (1).png"
                 alt="Modern building"
                 className="w-full h-full object-contain drop-shadow-2xl"
                 style={{ maxHeight: "480px" }}
@@ -918,7 +918,7 @@ export default function GHOUSECONNECT() {
           <div className="flex flex-col gap-8">
             <div className="rounded-2xl overflow-hidden shadow-md w-full">
               <img
-                src="public\3ad0a6ba4dd01e0c4597d34d2d2b5b3203958cd0.jpg"
+                src="/3ad0a6ba4dd01e0c4597d34d2d2b5b3203958cd0.jpg"
                 alt="Frequently asked questions"
                 className="w-full object-cover"
                 style={{ height: 340 }}
@@ -942,7 +942,7 @@ export default function GHOUSECONNECT() {
         <div
           className="absolute inset-0"
           style={{
-            backgroundImage: "url(public/19c7bbe7d015ed2811a7c4da42167204547f26e3.png)",
+            backgroundImage: "url(/19c7bbe7d015ed2811a7c4da42167204547f26e3.png)",
             backgroundSize: "cover",
             backgroundPosition: "center",
           }}
