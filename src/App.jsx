@@ -39,11 +39,41 @@ const getUser = () => {
   try { return JSON.parse(localStorage.getItem('user') || '{}') } catch { return {} }
 }
 
+/** Decode a JWT and return its payload, or null if malformed. */
+const decodeJwt = (token) => {
+  try {
+    const payload = token.split('.')[1]
+    if (!payload) return null
+    const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'))
+    return JSON.parse(json)
+  } catch { return null }
+}
+
+/** Clear expired session data from localStorage. */
+const clearSession = () => {
+  localStorage.removeItem('token')
+  localStorage.removeItem('user')
+}
+
 const isAuthenticated = () => {
   try {
     const token = localStorage.getItem('token')
     const user  = getUser()
-    return !!(token && token !== 'undefined' && token !== 'null' && user && Object.keys(user).length)
+
+    if (!token || token === 'undefined' || token === 'null') return false
+    if (!user || !Object.keys(user).length) return false
+
+    // Check JWT expiry if the token carries an exp claim
+    const payload = decodeJwt(token)
+    if (payload?.exp) {
+      const nowSec = Math.floor(Date.now() / 1000)
+      if (nowSec >= payload.exp) {
+        clearSession()   // wipe stale data so the next check is clean
+        return false
+      }
+    }
+
+    return true
   } catch { return false }
 }
 
@@ -161,9 +191,23 @@ function App() {
   const [, setToken] = useState(localStorage.getItem('token'))
 
   useEffect(() => {
+    // Sync token changes across browser tabs
     const sync = () => setToken(localStorage.getItem('token'))
     window.addEventListener('storage', sync)
-    return () => window.removeEventListener('storage', sync)
+
+    // Poll every 30 s — if the token has expired mid-session, clear it and
+    // force a re-render so ProtectedRoute redirects to the landing page
+    const interval = setInterval(() => {
+      if (!isAuthenticated()) {
+        clearSession()
+        setToken(null)
+      }
+    }, 30_000)
+
+    return () => {
+      window.removeEventListener('storage', sync)
+      clearInterval(interval)
+    }
   }, [])
 
   return (

@@ -32,7 +32,7 @@ const onBlur = (e) => {
 
 /* ── Shared input style ────────────────────────────────────────────────────── */
 const inputBase = {
-  width:"100%", padding:"11px 14px", border:`1.5px solid ${BORDER}`,
+  width:"100%", padding:"8px 12px", border:`1.5px solid ${BORDER}`,
   borderRadius:9, fontSize:14, color:NAVY, outline:"none",
   transition:"border-color .2s, box-shadow .2s",
   background:WHITE, boxSizing:"border-box", fontFamily:"'Inter',sans-serif",
@@ -64,7 +64,7 @@ const Shell = ({ children }) => (
       ::-webkit-scrollbar-track { background: rgba(229,231,235,0.6); border-radius: 4px; }
       ::-webkit-scrollbar-thumb { background: #1a56db; border-radius: 4px; border: 1px solid rgba(255,255,255,0.3); }
       ::-webkit-scrollbar-thumb:hover { background: #1444b8; }
-      .auth-page { min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 120px 16px 60px; position: relative; overflow-y: auto; overflow-x: hidden; font-family: 'Inter', sans-serif; }
+      .auth-page { height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; position: relative; overflow: hidden; font-family: 'Inter', sans-serif; }
       .auth-bg { position: fixed; inset: 0; background-image: url('https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1800&q=85'); background-size: cover; background-position: center; background-attachment: fixed; z-index: 0; }
       .auth-bg::after { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(11,26,46,0.72) 0%, rgba(26,86,219,0.38) 50%, rgba(7,20,34,0.80) 100%); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
       .orb { position: fixed; border-radius: 50%; pointer-events: none; z-index: 1; animation: shimmer 6s ease-in-out infinite; }
@@ -73,36 +73,36 @@ const Shell = ({ children }) => (
       .orb-3 { width:200px; height:200px; top:40%;  left:5%;        background: radial-gradient(circle, rgba(26,86,219,0.15) 0%, transparent 70%); animation-delay: 1.5s; }
       html { overflow-y: scroll; scrollbar-width: thin; scrollbar-color: #1a56db rgba(229,231,235,0.6); }
       body { overflow-x: hidden; }
-      .auth-card { position: relative; z-index: 10; width: 100%; max-width: 760px; margin-top: 20px; background: rgba(255,255,255,0.97); border-radius: 24px; box-shadow: 0 40px 100px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.15); overflow: hidden; animation: fadeUp .55s cubic-bezier(.16,1,.3,1) both; }
+      .auth-card { position: relative; z-index: 10; width: 100%; max-width: 760px; background: rgba(255,255,255,0.97); border-radius: 20px; box-shadow: 0 40px 100px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.15); overflow: hidden; animation: fadeUp .55s cubic-bezier(.16,1,.3,1) both; }
       .auth-card-topbar { height: 5px; background: linear-gradient(90deg, #1a56db 0%, #60a5fa 40%, #3b82f6 70%, #1a56db 100%); background-size: 200% 100%; }
-      .auth-card-body { padding: 44px 48px 34px; }
+      .auth-card-body { padding: 18px 36px 14px; }
       .back-btn { position: fixed; top: 20px; left: 20px; z-index: 20; display: flex; align-items: center; gap: 7px; color: rgba(255,255,255,0.9); background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22); backdrop-filter: blur(8px); border-radius: 10px; padding: 8px 16px; font-size: 13px; font-weight: 500; text-decoration: none; transition: background .2s; }
       .back-btn:hover { background: rgba(255,255,255,0.2); }
-      .logo-row { display: flex; align-items: center; gap: 10px; justify-content: center; margin-bottom: 8px; }
+      .logo-row { display: flex; align-items: center; gap: 8px; justify-content: center; margin-bottom: 4px; }
       .logo-icon { width: 40px; height: 40px; background: ${BLUE}; border-radius: 10px; display: grid; place-items: center; box-shadow: 0 4px 14px rgba(26,86,219,0.35); }
       .logo-text { font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 22px; color: ${NAVY}; }
       .logo-text span { color: ${BLUE}; }
-      .logo-tag { text-align: center; font-size: 12px; color: #9ca3af; letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 26px; font-weight: 500; }
-      .role-wrap { display: flex; background: ${LIGHTBG}; border-radius: 13px; padding: 4px; gap: 4px; margin-bottom: 22px; }
+      .logo-tag { text-align: center; font-size: 11px; color: #9ca3af; letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 10px; font-weight: 500; }
+      .role-wrap { display: flex; background: ${LIGHTBG}; border-radius: 13px; padding: 4px; gap: 4px; margin-bottom: 10px; }
       .role-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px; padding: 10px 12px; border-radius: 10px; border: none; font-size: 14px; font-weight: 500; cursor: pointer; transition: all .22s; font-family: 'Inter', sans-serif; }
       .role-btn.active { background: ${BLUE}; color: white; font-weight: 700; box-shadow: 0 4px 16px rgba(26,86,219,0.3); }
       .role-btn.inactive { background: transparent; color: ${GREY}; }
-      .tab-row { display: flex; border-bottom: 2px solid ${BORDER}; margin-bottom: 22px; }
+      .tab-row { display: flex; border-bottom: 2px solid ${BORDER}; margin-bottom: 10px; }
       .tab-btn { flex: 1; padding: 10px 0; text-align: center; font-size: 14px; font-weight: 600; border: none; background: none; cursor: pointer; transition: color .2s; margin-bottom: -2px; font-family: 'Inter', sans-serif; }
       .tab-btn.active  { color: ${BLUE};  border-bottom: 2px solid ${BLUE}; }
       .tab-btn.inactive{ color: ${GREY}; border-bottom: 2px solid transparent; }
-      .col2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-      .field-wrap { margin-bottom: 15px; position: relative; }
+      .col2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      .field-wrap { margin-bottom: 8px; position: relative; }
       label.field-label { display: block; font-size: 13.5px; font-weight: 600; color: #1f2937; margin-bottom: 6px; letter-spacing: 0.2px; }
       .pass-wrap { position: relative; }
       .eye-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: ${GREY}; display: flex; align-items: center; padding: 0; }
       .error-box { background: #fef2f2; border: 1px solid #fecaca; border-radius: 9px; padding: 10px 14px; color: #dc2626; font-size: 13.5px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
       .hint-ok  { font-size: 12px; margin-top: 4px; color: #16a34a; }
       .hint-err { font-size: 12px; margin-top: 4px; color: #dc2626; }
-      .submit-btn { width: 100%; padding: 13px 0; background: ${BLUE}; color: white; border: none; border-radius: 11px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 8px; transition: background .2s, transform .15s, box-shadow .2s; box-shadow: 0 6px 22px rgba(26,86,219,0.35); letter-spacing: 0.3px; font-family: 'Inter', sans-serif; }
+      .submit-btn { width: 100%; padding: 10px 0; background: ${BLUE}; color: white; border: none; border-radius: 11px; font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 6px; transition: background .2s, transform .15s, box-shadow .2s; box-shadow: 0 6px 22px rgba(26,86,219,0.35); letter-spacing: 0.3px; font-family: 'Inter', sans-serif; }
       .submit-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 10px 28px rgba(26,86,219,0.42); }
       .submit-btn:disabled { background: #9ca3af; cursor: not-allowed; box-shadow: none; transform: none; }
-      .switch-row  { text-align: center; margin-top: 18px; font-size: 14px; color: ${GREY}; }
+      .switch-row  { text-align: center; margin-top: 8px; font-size: 13px; color: ${GREY}; }
       .switch-link { color: ${BLUE}; font-weight: 600; background: none; border: none; cursor: pointer; font-size: 14px; font-family: 'Inter', sans-serif; }
       .otp-wrap { text-align: center; padding: 10px 0; }
       .otp-icon { width: 72px; height: 72px; border-radius: 50%; background: ${LIGHTBG}; display: grid; place-items: center; margin: 0 auto 18px; box-shadow: 0 4px 16px rgba(26,86,219,0.12); }
@@ -112,7 +112,7 @@ const Shell = ({ children }) => (
       .forgot-link a:hover { text-decoration: underline; }
       .spinner { width:17px; height:17px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; display: inline-block; animation: spin .7s linear infinite; }
       .spin-row { display:flex; align-items:center; justify-content:center; gap:9px; }
-      @media (max-width: 600px) { .auth-card-body { padding: 28px 22px 24px; } .col2 { grid-template-columns: 1fr; } .auth-card { border-radius: 18px; } }
+      @media (max-width: 600px) { .auth-card-body { padding: 14px 16px 10px; } .col2 { grid-template-columns: 1fr; } .auth-card { border-radius: 14px; } }
     `}</style>
     <div className="auth-page">
       <div className="auth-bg"/>
@@ -149,7 +149,7 @@ const Auth = () => {
   const [userType, setUserType]           = useState('user');
   const [formData, setFormData]           = useState({
     firstName:'', lastName:'', email:'', password:'', confirmPassword:'',
-    phone:'', address:'', state:'',
+    phone:'', address:'', state:'', alias:'',
   });
   const [error, setError]                 = useState('');
   const [showPassword, setShowPassword]   = useState(false);
@@ -181,7 +181,7 @@ const Auth = () => {
   }, [loginSuccess, isRegister, userType, navigate]);
 
   const resetForm = (keepEmail = false) => {
-    setFormData({ firstName:'',lastName:'',email:'',password:'',confirmPassword:'',phone:'',address:'',state:'' });
+    setFormData({ firstName:'',lastName:'',email:'',password:'',confirmPassword:'',phone:'',address:'',state:'',alias:'' });
     setError(''); setShowPassword(false); setShowConfirm(false);
     setLoginSuccess(false);
     if (!keepEmail) {
@@ -219,6 +219,7 @@ const Auth = () => {
           email:formData.email, password:formData.password,
           confirmPassword:formData.confirmPassword,
           phone, address:formData.address, state:formData.state,
+          alias: formData.alias,
           role: userType === 'agent' ? 'agent' : 'user' }
       : { email:formData.email, password:formData.password };
 
@@ -391,10 +392,10 @@ const Auth = () => {
         ))}
       </div>
 
-      <h1 style={{ fontFamily:"'Poppins',sans-serif", fontWeight:700, fontSize:"1.45rem", color:NAVY, textAlign:"center", marginBottom:4 }}>
+      <h1 style={{ fontFamily:"'Poppins',sans-serif", fontWeight:700, fontSize:"1.25rem", color:NAVY, textAlign:"center", marginBottom:2 }}>
         {isRegister ? `Create ${userType === 'user' ? 'User' : 'Agent'} Account` : 'Welcome Back'}
       </h1>
-      <p style={{ fontSize:14, color:GREY, textAlign:"center", marginBottom:20 }}>
+      <p style={{ fontSize:13, color:GREY, textAlign:"center", marginBottom:8 }}>
         {isRegister
           ? `Join Nestfind as a${userType === 'agent' ? 'n agent' : ' user'} to get started`
           : `Sign in to your ${userType} account`}
@@ -468,6 +469,17 @@ const Auth = () => {
                   {NIGERIAN_STATES.map(st => <option key={st} value={st}>{st}</option>)}
                 </select>
               </div>
+            </div>
+            <div className="field-wrap">
+              <label className="field-label">Role</label>
+              <select name="alias" value={formData.alias} onChange={handleChange}
+                style={{ ...selectBase, color: formData.alias ? NAVY : GREY }}
+                onFocus={onFocus} onBlur={onBlur}
+                required disabled={isLoading}>
+                <option value="" disabled>Select your role</option>
+                <option value="agent">Agent</option>
+                <option value="landlord">Landlord</option>
+              </select>
             </div>
             <div className="col2">
               <div className="field-wrap">
