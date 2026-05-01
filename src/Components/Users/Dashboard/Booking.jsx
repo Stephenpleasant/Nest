@@ -206,7 +206,8 @@ const MyBookings = () => {
       if (pending) { setSuccessBooking(pending); localStorage.removeItem("nestfind_pending_booking"); }
       setPaymentSuccess(true);
       window.history.replaceState({}, "", window.location.pathname);
-      fetchBookings(true).catch(() => {});
+      // Use normal fetch (not silent) so loading spinner resolves correctly
+      fetchBookings(false).catch(() => {});
       return;
     }
     fetchBookings();

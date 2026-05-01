@@ -16,21 +16,17 @@ const Sidebar = ({ mobileOpen, setMobileOpen, activePage, onNavigate }) => {
   const location = useLocation();
   const [showLogout, setShowLogout] = useState(false);
 
-  // If mobileOpen prop is provided use it, otherwise derive open state from activePage (agent mode)
+  const storedUser = (() => { try { return JSON.parse(localStorage.getItem("nestfind_user") || localStorage.getItem("user") || "{}"); } catch { return {}; } })();
+  const userName = storedUser?.fullName || storedUser?.name || "User";
+  const initials = userName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+
   const isOpen = mobileOpen ?? false;
   const closeSidebar = () => setMobileOpen?.(false);
-
-  // Active check: prefer route-based (user mode), fallback to activePage prop (agent mode)
   const isActive = (path, label) => {
     if (location.pathname) return location.pathname === path;
     return activePage === label;
   };
-
-  // Link click: close sidebar on mobile (user mode) OR call onNavigate (agent mode)
-  const handleClick = (label) => {
-    closeSidebar();
-    onNavigate?.(label);
-  };
+  const handleClick = (label) => { closeSidebar(); onNavigate?.(label); };
 
   return (
     <>
@@ -64,7 +60,7 @@ const Sidebar = ({ mobileOpen, setMobileOpen, activePage, onNavigate }) => {
           </span>
         </div>
 
-        {/* Nav links */}
+        {/* Nav links + Logout in same list */}
         <div style={{ flex:1, padding:"0 12px", display:"flex", flexDirection:"column", gap:4 }}>
           {NAV_ITEMS.map(({ to, icon: Icon, label }) => {
             const active = isActive(to, label);
@@ -97,11 +93,8 @@ const Sidebar = ({ mobileOpen, setMobileOpen, activePage, onNavigate }) => {
               </Link>
             );
           })}
-        </div>
 
-        {/* Log out */}
-        <div style={{ padding:"12px 12px 28px" }}>
-          <div style={{ height:1, background:"#f3f4f6", margin:"0 8px 12px" }}/>
+          {/* Logout — immediately after Settings */}
           <button
             onClick={() => setShowLogout(true)}
             style={{
@@ -116,6 +109,20 @@ const Sidebar = ({ mobileOpen, setMobileOpen, activePage, onNavigate }) => {
             <LogOut size={19} color="#ef4444" strokeWidth={1.8}/>
             <span style={{ fontSize:13.5, fontWeight:500, color:"#ef4444" }}>Log out</span>
           </button>
+        </div>
+
+        {/* User name — pinned at bottom */}
+        <div style={{ padding:"0 12px 24px" }}>
+          <div style={{ height:1, background:"#f3f4f6", margin:"0 8px 12px" }}/>
+          <div style={{ display:"flex", alignItems:"center", gap:10, padding:"4px 14px" }}>
+            <div style={{ width:34, height:34, borderRadius:"50%", background:"linear-gradient(135deg,#1a56db,#0b1a2e)", display:"grid", placeItems:"center", flexShrink:0 }}>
+              <span style={{ fontSize:11, fontWeight:700, color:"#fff" }}>{initials}</span>
+            </div>
+            <div style={{ minWidth:0 }}>
+              <div style={{ fontSize:13, fontWeight:700, color:"#0b1a2e", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{userName}</div>
+              <div style={{ fontSize:11, color:"#9ca3af" }}>User</div>
+            </div>
+          </div>
         </div>
       </nav>
 
