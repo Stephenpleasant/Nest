@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 
-export default function AvatarUpload({ preview, onFileChange }) {
+export default function AvatarUpload({ preview, onFileChange, disabled = false }) {
   const inputRef = useRef(null)
 
   const handleChange = (e) => {
@@ -19,21 +19,26 @@ export default function AvatarUpload({ preview, onFileChange }) {
           </svg>
         )}
       </div>
-      <button
-        type="button"
-        onClick={() => inputRef.current?.click()}
-        className="px-4 py-2 text-sm font-medium text-white bg-gray-800 rounded-md hover:bg-gray-700 transition w-36 text-center"
-      >
-        Update Profile Picture
-      </button>
-      <p className="text-xs text-gray-400">Minimum size 300 x 300 px</p>
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={handleChange}
-      />
+
+      {!disabled && (
+        <>
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className="px-4 py-2 text-sm font-medium text-white bg-gray-800 rounded-md hover:bg-gray-700 transition w-36 text-center"
+          >
+            Update Picture
+          </button>
+          <p className="text-xs text-gray-400">Minimum size 300 x 300 px</p>
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleChange}
+          />
+        </>
+      )}
     </div>
   )
 }

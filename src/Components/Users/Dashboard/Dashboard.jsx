@@ -5,6 +5,7 @@ import {
   LogOut, Menu, MapPin, Search, ChevronLeft, ChevronRight,
   ChevronDown, X,
 } from "lucide-react";
+import LogoutModal from "../LogoutModal";
 
 const formatPrice = (price) =>
   "₦" + new Intl.NumberFormat("en-NG").format(price);
@@ -24,6 +25,11 @@ const NAV_ITEMS = [
 function Sidebar({ mobileOpen, setMobileOpen }) {
   const location = useLocation();
   const isActive = (path) => location.pathname === path;
+  const [showLogout, setShowLogout] = useState(false);
+
+  const storedUser = (() => { try { return JSON.parse(localStorage.getItem("nestfind_user") || localStorage.getItem("user") || "{}"); } catch { return {}; } })();
+  const userName = storedUser?.fullName || storedUser?.name || "User";
+  const initials = userName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
 
   return (
     <>
@@ -79,21 +85,35 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
               </Link>
             );
           })}
-        </div>
 
-        <div style={{ padding: "10px 10px 24px" }}>
-          <div style={{ height: 1, background: "#f3f4f6", margin: "0 6px 10px" }} />
+          {/* Logout — sits right after Settings in the same list */}
           <button
-            onClick={() => { localStorage.removeItem("token"); localStorage.removeItem("user"); localStorage.removeItem("nestfind_user"); window.location.href = "/"; }}
+            onClick={() => setShowLogout(true)}
             style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 12, border: "1px solid transparent", background: "transparent", cursor: "pointer", width: "100%", transition: "all 0.18s" }}
             onMouseEnter={e => { e.currentTarget.style.background = "#fef2f2"; e.currentTarget.style.borderColor = "#fecaca"; }}
             onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "transparent"; }}
           >
-            <LogOut size={18} color="#ef4444" strokeWidth={1.8} />
+            <LogOut size={19} color="#ef4444" strokeWidth={1.8} />
             <span style={{ fontSize: 13, fontWeight: 500, color: "#ef4444" }}>Log out</span>
           </button>
         </div>
+
+        {/* User name — pinned at very bottom */}
+        <div style={{ padding: "0 10px 20px" }}>
+          <div style={{ height: 1, background: "#f3f4f6", margin: "0 6px 10px" }} />
+          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "4px 12px" }}>
+            <div style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(135deg, #1a56db, #0b1a2e)", display: "grid", placeItems: "center", flexShrink: 0 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#fff" }}>{initials}</span>
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 12.5, fontWeight: 700, color: "#0b1a2e", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{userName}</div>
+              <div style={{ fontSize: 10.5, color: "#9ca3af" }}>User</div>
+            </div>
+          </div>
+        </div>
       </nav>
+
+      {showLogout && <LogoutModal onClose={() => setShowLogout(false)} />}
 
       <style>{`
         .nestfind-sidebar { transform: translateX(-100%); }

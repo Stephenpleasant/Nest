@@ -59,7 +59,7 @@ const FAQS = [
 ];
 
 /* ─── Empty form ─────────────────────────────────────────────────────────── */
-const EMPTY = { firstName:"", lastName:"", email:"", phone:"", address:"", state:"", password:"", confirmPassword:"" };
+const EMPTY = { firstName:"", lastName:"", email:"", phone:"", address:"", state:"", alias:"", password:"", confirmPassword:"" };
 
 /* ─── Tiny helpers ───────────────────────────────────────────────────────── */
 const inp = (extra="") =>
@@ -140,6 +140,7 @@ function AuthModal({ onClose, defaultTab = "signin" }) {
           phone:           form.phone,
           address:         form.address,
           state:           form.state,
+          alias:           form.alias,
           role:            userType === "agent" ? "agent" : "user" }
       : { email:form.email, password:form.password };
 
@@ -149,6 +150,7 @@ function AuthModal({ onClose, defaultTab = "signin" }) {
         body: JSON.stringify(payload),
       });
       const data = await res.json();
+      console.log("Backend error response:", JSON.stringify(data)); // ← add this
       if (!res.ok) throw new Error(data.message || "Operation failed. Please try again.");
 
       if (!isReg) {
@@ -350,6 +352,20 @@ function AuthModal({ onClose, defaultTab = "signin" }) {
                 </select>
               </div>
             </div>
+
+            {/* Role — Agent only */}
+            {userType === "agent" && (
+              <div className="mb-3">
+                <Lbl>Role</Lbl>
+                <select name="alias" value={form.alias} onChange={handle}
+                  required={userType === "agent"} disabled={loading}
+                  className={inp(`appearance-none ${!form.alias ? "text-gray-400" : "text-gray-900"}`)}>
+                  <option value="" disabled>Select your role</option>
+                  <option value="agent">Agent</option>
+                  <option value="landlord">Landlord</option>
+                </select>
+              </div>
+            )}
 
             {/* Row 4: Password + Confirm */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
@@ -942,7 +958,7 @@ export default function GHOUSECONNECT() {
         <div
           className="absolute inset-0"
           style={{
-            backgroundImage: "url(/19c7bbe7d015ed2811a7c4da42167204547f26e3.png)",
+            backgroundImage: "url(/core-bg.png",
             backgroundSize: "cover",
             backgroundPosition: "center",
           }}

@@ -470,17 +470,20 @@ const Auth = () => {
                 </select>
               </div>
             </div>
-            <div className="field-wrap">
-              <label className="field-label">Role</label>
-              <select name="alias" value={formData.alias} onChange={handleChange}
-                style={{ ...selectBase, color: formData.alias ? NAVY : GREY }}
-                onFocus={onFocus} onBlur={onBlur}
-                required disabled={isLoading}>
-                <option value="" disabled>Select your role</option>
-                <option value="agent">Agent</option>
-                <option value="landlord">Landlord</option>
-              </select>
-            </div>
+            {userType === 'agent' && (
+  <div className="field-wrap">
+    <label className="field-label">Role</label>
+    <select name="alias" value={formData.alias} onChange={handleChange}
+      style={{ ...selectBase, color: formData.alias ? NAVY : GREY }}
+      onFocus={onFocus} onBlur={onBlur}
+      required={userType === 'agent'}
+      disabled={isLoading}>
+      <option value="" disabled>Select your role</option>
+      <option value="agent">Agent</option>
+      <option value="landlord">Landlord</option>
+    </select>
+  </div>
+)}
             <div className="col2">
               <div className="field-wrap">
                 <label className="field-label">Password</label>
