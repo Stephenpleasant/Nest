@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import useSessionTimeout from "./Usesessiontimeout";
 import {
   Eye, EyeOff, Lock, Mail, User, Phone, MapPin, Search,
   Star, Check, Plus, X, Menu, Home, Building, Building2,
@@ -456,7 +457,7 @@ function ModalShell({ onClose, children }) {
             <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/30">
               <Home size={18} className="text-white"/>
             </div>
-            <span className="font-extrabold text-xl text-gray-900">Nest<span className="text-blue-600">find</span></span>
+            <span className="font-extrabold text-xl text-gray-900">GHOUSE<span className="text-blue-600">CONNECT</span></span>
           </div>
           <p className="text-center text-[11px] text-gray-400 uppercase tracking-widest mb-6 font-medium">
             Nigeria's Trusted Real Estate Platform
@@ -547,6 +548,9 @@ function HowItWorks({ onSignUp }) {
 export default function GHOUSECONNECT() {
   const navigate = useNavigate();
 
+  // Session timeout: clears token + redirects to landing after 10 min idle
+  useSessionTimeout();
+
   const [modal, setModal]         = useState(false);
   const [modalTab, setModalTab]   = useState("signin");
   const [scrolled, setScrolled]   = useState(false);
@@ -620,7 +624,7 @@ export default function GHOUSECONNECT() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
           <button onClick={() => scrollTo("home")} className="flex items-center gap-2">
             <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center"><Home size={16} className="text-white"/></div>
-            <span className="text-white text-lg sm:text-xl font-bold">Nest<span className="text-blue-400">find</span></span>
+            <span className="text-white text-lg sm:text-xl font-bold">GHOUSE<span className="text-blue-400">CONNECT</span></span>
           </button>
 
           <div className="hidden md:flex items-center gap-5 lg:gap-7">

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
+import useSessionTimeout from './Usesessiontimeout';
 import { Eye, EyeOff, ArrowLeft, User, Building2, AlertCircle } from 'lucide-react';
 
 /* ── Color tokens ──────────────────────────────────────────────────────────── */
@@ -130,7 +131,7 @@ const Shell = ({ children }) => (
                 <polyline points="9 22 9 12 15 12 15 22" stroke="white" strokeWidth="2" fill="none"/>
               </svg>
             </div>
-            <span className="logo-text">Nest<span>find</span></span>
+            <span className="logo-text">GHOUSE<span>CONNECT</span></span>
           </div>
           <p className="logo-tag">Nigeria's trusted real estate platform</p>
           {children}
@@ -166,6 +167,9 @@ const Auth = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Session timeout: if user is already logged in, track inactivity
+  useSessionTimeout({ requireAuth: true });
 
   useEffect(() => {
     if (location.pathname.includes('/agent')) setUserType('agent');
@@ -252,8 +256,9 @@ const Auth = () => {
 
         localStorage.setItem('token', token);
         localStorage.setItem('user', JSON.stringify({ ...userData, userType }));
-        localStorage.setItem('nestfind_user', JSON.stringify({
-          name:  userData.name,
+        localStorage.setItem('ghouseconnect_user', JSON.stringify({
+          name:  userData.name || apiUser?.fullName || '',
+          fullName: userData.name || apiUser?.fullName || '',
           email: userData.email,
         }));
         setLoginSuccess(true);
@@ -300,8 +305,9 @@ const Auth = () => {
         };
         localStorage.setItem('token', verifyToken);
         localStorage.setItem('user', JSON.stringify({ ...userData, userType }));
-        localStorage.setItem('nestfind_user', JSON.stringify({
-          name:  userData.name,
+        localStorage.setItem('ghouseconnect_user', JSON.stringify({
+          name:  userData.name || apiUser?.fullName || '',
+          fullName: userData.name || apiUser?.fullName || '',
           email: userData.email,
         }));
       }
@@ -397,7 +403,7 @@ const Auth = () => {
       </h1>
       <p style={{ fontSize:13, color:GREY, textAlign:"center", marginBottom:8 }}>
         {isRegister
-          ? `Join Nestfind as a${userType === 'agent' ? 'n agent' : ' user'} to get started`
+          ? `Join GHOUSECONNECT as a${userType === 'agent' ? 'n agent' : ' user'} to get started`
           : `Sign in to your ${userType} account`}
       </p>
 

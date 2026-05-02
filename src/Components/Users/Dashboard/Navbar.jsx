@@ -16,7 +16,7 @@ const Sidebar = ({ mobileOpen, setMobileOpen, activePage, onNavigate }) => {
   const location = useLocation();
   const [showLogout, setShowLogout] = useState(false);
 
-  const storedUser = (() => { try { return JSON.parse(localStorage.getItem("nestfind_user") || localStorage.getItem("user") || "{}"); } catch { return {}; } })();
+  const storedUser = (() => { try { return JSON.parse(localStorage.getItem("ghouseconnect_user") || localStorage.getItem("user") || "{}"); } catch { return {}; } })();
   const userName = storedUser?.fullName || storedUser?.name || "User";
   const initials = userName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
 
@@ -45,7 +45,7 @@ const Sidebar = ({ mobileOpen, setMobileOpen, activePage, onNavigate }) => {
           display:"flex", flexDirection:"column", zIndex:50,
           transition:"transform 0.3s ease-in-out",
         }}
-        className={`nestfind-sidebar${isOpen ? " open" : ""}`}
+        className={`ghouseconnect-sidebar${isOpen ? " open" : ""}`}
       >
         {/* Logo */}
         <div style={{ padding:"28px 24px 24px", display:"flex", alignItems:"center", gap:10 }}>
@@ -56,7 +56,7 @@ const Sidebar = ({ mobileOpen, setMobileOpen, activePage, onNavigate }) => {
             </svg>
           </div>
           <span style={{ fontFamily:"Poppins,sans-serif", fontWeight:700, fontSize:18, color:"#0b1a2e" }}>
-            Nest<span style={{ color:"#1a56db" }}>find</span>
+            GHOUSE<span style={{ color:"#1a56db" }}>CONNECT</span>
           </span>
         </div>
 
@@ -129,9 +129,9 @@ const Sidebar = ({ mobileOpen, setMobileOpen, activePage, onNavigate }) => {
       {showLogout && <LogoutModal onClose={() => setShowLogout(false)} />}
 
       <style>{`
-        .nestfind-sidebar { transform: translateX(-100%); }
-        .nestfind-sidebar.open { transform: translateX(0); }
-        @media (min-width: 768px) { .nestfind-sidebar { transform: translateX(0) !important; } }
+        .ghouseconnect-sidebar { transform: translateX(-100%); }
+        .ghouseconnect-sidebar.open { transform: translateX(0); }
+        @media (min-width: 768px) { .ghouseconnect-sidebar { transform: translateX(0) !important; } }
       `}</style>
     </>
   );

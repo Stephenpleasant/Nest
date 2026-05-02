@@ -27,7 +27,7 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
   const isActive = (path) => location.pathname === path;
   const [showLogout, setShowLogout] = useState(false);
 
-  const storedUser = (() => { try { return JSON.parse(localStorage.getItem("nestfind_user") || localStorage.getItem("user") || "{}"); } catch { return {}; } })();
+  const storedUser = (() => { try { return JSON.parse(localStorage.getItem("ghouseconnect_user") || localStorage.getItem("user") || "{}"); } catch { return {}; } })();
   const userName = storedUser?.fullName || storedUser?.name || "User";
   const initials = userName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
 
@@ -44,7 +44,7 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
         background: "#fff", boxShadow: "4px 0 20px rgba(0,0,0,0.06)",
         display: "flex", flexDirection: "column",
         zIndex: 50, transition: "transform 0.3s ease-in-out",
-      }} className={`nestfind-sidebar${mobileOpen ? " open" : ""}`}>
+      }} className={`ghouseconnect-sidebar${mobileOpen ? " open" : ""}`}>
 
         <div style={{ padding: "20px 16px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -55,7 +55,7 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
               </svg>
             </div>
             <span style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 17, color: "#0b1a2e" }}>
-              Nest<span style={{ color: "#1a56db" }}>find</span>
+              GHOUSE<span style={{ color: "#1a56db" }}>CONNECT</span>
             </span>
           </div>
           <button onClick={() => setMobileOpen(false)} className="sidebar-close-btn"
@@ -116,9 +116,9 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
       {showLogout && <LogoutModal onClose={() => setShowLogout(false)} />}
 
       <style>{`
-        .nestfind-sidebar { transform: translateX(-100%); }
-        .nestfind-sidebar.open { transform: translateX(0); }
-        @media (min-width: 768px) { .nestfind-sidebar { transform: translateX(0) !important; } }
+        .ghouseconnect-sidebar { transform: translateX(-100%); }
+        .ghouseconnect-sidebar.open { transform: translateX(0); }
+        @media (min-width: 768px) { .ghouseconnect-sidebar { transform: translateX(0) !important; } }
         @media (max-width: 767px) { .sidebar-close-btn { display: flex !important; } }
       `}</style>
     </>
@@ -261,9 +261,9 @@ export default function UserDashboard() {
         html, body { overflow-x: hidden; max-width: 100%; }
 
         /* Sidebar */
-        .nestfind-sidebar { transform: translateX(-100%); }
-        .nestfind-sidebar.open { transform: translateX(0); }
-        @media (min-width: 768px) { .nestfind-sidebar { transform: translateX(0) !important; } }
+        .ghouseconnect-sidebar { transform: translateX(-100%); }
+        .ghouseconnect-sidebar.open { transform: translateX(0); }
+        @media (min-width: 768px) { .ghouseconnect-sidebar { transform: translateX(0) !important; } }
 
         /* Main content offset */
         .dash-main { margin-left: 0 !important; }
@@ -331,7 +331,7 @@ export default function UserDashboard() {
         {/* Mobile top bar */}
         <div className="dash-topbar" style={{ alignItems: "center", justifyContent: "space-between", padding: "12px 14px", background: "#fff", boxShadow: "0 1px 8px rgba(0,0,0,0.08)", position: "sticky", top: 0, zIndex: 30 }}>
           <span style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 17, color: "#0b1a2e" }}>
-            Nest<span style={{ color: "#1a56db" }}>find</span>
+            GHOUSE<span style={{ color: "#1a56db" }}>CONNECT</span>
           </span>
           <button onClick={() => setMobileOpen(true)} style={{ background: "none", border: "none", cursor: "pointer", padding: 6 }}>
             <Menu size={24} color="#0b1a2e" />
@@ -347,7 +347,7 @@ export default function UserDashboard() {
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(7,20,40,0.55) 0%, rgba(7,20,40,0.68) 100%)" }} />
           <div style={{ position: "relative", zIndex: 1, textAlign: "center", padding: "0 16px", width: "100%", maxWidth: 680 }}>
             <p style={{ fontSize: 10, fontWeight: 700, color: "#93c5fd", letterSpacing: "2px", textTransform: "uppercase", marginBottom: 6 }}>
-              WELCOME TO NESTFIND
+              WELCOME TO GHOUSECONNECT
             </p>
             <h1 className="dash-hero-title" style={{ fontFamily: "Poppins, sans-serif", fontWeight: 800, color: "#fff", margin: "0 0 8px", lineHeight: 1.2 }}>
               Find Your Next Home
