@@ -148,7 +148,7 @@ const InspectionModal = ({ property, onClose }) => {
 
   return (
     <div
-      style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(7,20,34,0.65)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 12, overflowY: "auto" }}
+      style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(7,20,34,0.65)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <style>{`
@@ -193,7 +193,7 @@ const InspectionModal = ({ property, onClose }) => {
       <div className="insp-modal" style={{
         background: WHITE, borderRadius: 22, boxShadow: "0 32px 80px rgba(0,0,0,0.4)",
         overflow: "hidden", animation: "fadeUp .35s cubic-bezier(.16,1,.3,1) both",
-        margin: "auto",
+        margin: "auto", maxHeight: "90vh", display: "flex", flexDirection: "column",
       }}>
         {/* Header */}
         <div className="insp-header" style={{ background: NAVY, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -215,7 +215,7 @@ const InspectionModal = ({ property, onClose }) => {
           </div>
         )}
 
-        <div className="insp-body">
+        <div className="insp-body" style={{ overflowY: "auto", flex: 1 }}>
 
           {/* ── STEP 1 ── */}
           {step === 1 && (
