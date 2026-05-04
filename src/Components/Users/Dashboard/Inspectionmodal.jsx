@@ -148,7 +148,7 @@ const InspectionModal = ({ property, onClose }) => {
 
   return (
     <div
-      style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(7,20,34,0.65)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
+      style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(7,20,34,0.65)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, overflowY: "auto" }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <style>{`
@@ -192,8 +192,8 @@ const InspectionModal = ({ property, onClose }) => {
 
       <div className="insp-modal" style={{
         background: WHITE, borderRadius: 22, boxShadow: "0 32px 80px rgba(0,0,0,0.4)",
-        overflow: "hidden", animation: "fadeUp .35s cubic-bezier(.16,1,.3,1) both",
-        margin: "auto", maxHeight: "90vh", display: "flex", flexDirection: "column",
+        animation: "fadeUp .35s cubic-bezier(.16,1,.3,1) both",
+        margin: "auto", maxHeight: "92vh", display: "flex", flexDirection: "column", overflow: "hidden",
       }}>
         {/* Header */}
         <div className="insp-header" style={{ background: NAVY, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -406,16 +406,16 @@ const InspectionModal = ({ property, onClose }) => {
 
           {/* ── STEP 3 ── */}
           {step === 3 && (
-            <div style={{ textAlign: "center", padding: "8px 0 12px" }}>
-              <div style={{ width: 72, height: 72, borderRadius: "50%", background: "#f0fdf4", display: "grid", placeItems: "center", margin: "0 auto 16px" }}>
-                <CheckCircle size={36} color="#16a34a" />
+            <div style={{ textAlign: "center", padding: "4px 0 8px" }}>
+              <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#f0fdf4", display: "grid", placeItems: "center", margin: "0 auto 10px" }}>
+                <CheckCircle size={28} color="#16a34a" />
               </div>
-              <h4 style={{ fontFamily: "Poppins, sans-serif", color: NAVY, fontSize: "1.1rem", marginBottom: 8 }}>Inspection Booked!</h4>
-              <p style={{ color: "#6b7280", fontSize: 13.5, lineHeight: 1.7, marginBottom: 18 }}>
+              <h4 style={{ fontFamily: "Poppins, sans-serif", color: NAVY, fontSize: "1rem", marginBottom: 6 }}>Inspection Booked!</h4>
+              <p style={{ color: "#6b7280", fontSize: 13, lineHeight: 1.6, marginBottom: 14 }}>
                 Your inspection for <strong style={{ color: NAVY }}>{property.title}</strong> has been confirmed for<br />
                 <strong style={{ color: BLUE }}>{formatDateLabel(selectedDate)}</strong> at <strong style={{ color: BLUE }}>{selectedTime}</strong>.
               </p>
-              <div style={{ background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 12, padding: "14px 16px", marginBottom: 18, display: "flex", alignItems: "flex-start", gap: 12, textAlign: "left" }}>
+              <div style={{ background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 12, padding: "10px 14px", marginBottom: 12, display: "flex", alignItems: "flex-start", gap: 12, textAlign: "left" }}>
                 <Mail size={20} color="#0284c7" style={{ flexShrink: 0, marginTop: 2 }} />
                 <div>
                   <p style={{ fontWeight: 700, fontSize: 13.5, color: "#0c4a6e", margin: "0 0 3px" }}>Confirmation Email Sent</p>
@@ -424,7 +424,7 @@ const InspectionModal = ({ property, onClose }) => {
                   </p>
                 </div>
               </div>
-              <div style={{ background: "#f8fafc", borderRadius: 12, padding: "14px 16px", marginBottom: 20, textAlign: "left" }}>
+              <div style={{ background: "#f8fafc", borderRadius: 12, padding: "10px 14px", marginBottom: 14, textAlign: "left" }}>
                 {[
                   ["Property", property.title],
                   ["Date", formatDateLabel(selectedDate)],
@@ -433,7 +433,7 @@ const InspectionModal = ({ property, onClose }) => {
                   ["Booked By", userName || "You"],
                   ["Status", "⏳ Pending Agent Confirmation"],
                 ].map(([label, value]) => (
-                  <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 0", borderBottom: "1px solid #f3f4f6" }}>
+                  <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 0", borderBottom: "1px solid #f3f4f6" }}>
                     <span style={{ fontSize: 12.5, color: "#6b7280", fontWeight: 600 }}>{label}</span>
                     <span style={{ fontSize: 13, color: NAVY, fontWeight: 600, textAlign: "right", maxWidth: "58%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{value}</span>
                   </div>
