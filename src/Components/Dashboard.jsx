@@ -92,6 +92,7 @@ const Spinner = () => (
    AUTH MODAL  (mirrors Auth.jsx logic exactly)
 ═══════════════════════════════════════════════════════════════════════════ */
 function AuthModal({ onClose, defaultTab = "signin" }) {
+  const navigate              = useNavigate();
   const [tab, setTab]         = useState(defaultTab);   // "signin" | "register"
   const [userType, setUT]     = useState("user");     // "user" | "agent"
   const [form, setForm]       = useState(EMPTY);
@@ -416,7 +417,13 @@ function AuthModal({ onClose, defaultTab = "signin" }) {
               </div>
             </div>
             <div className="text-right mb-5">
-              <a href="#" className="text-blue-600 text-sm font-medium hover:underline">Forgot password?</a>
+              <button
+                type="button"
+                onClick={() => { onClose(); navigate('/forgot-password'); }}
+                className="text-blue-600 text-sm font-medium hover:underline bg-transparent border-none cursor-pointer p-0"
+              >
+                Forgot password?
+              </button>
             </div>
           </>
         )}

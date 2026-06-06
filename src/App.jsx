@@ -21,6 +21,7 @@ import AdminSidebar       from './Components/Admin/component/Navbar'
 import AdminPageContent   from './Components/Admin/component/PageContent'
 import { PAGES }          from './Components/Admin/component/NavConfig'
 import AdminAuth          from './Adminauth'
+import ForgotPassword from './Components/Forgotpassword'
 
 const NAV_W = 260
 
@@ -245,6 +246,10 @@ function App() {
           path="/settings"
           element={<ProtectedRoute><SettingsLayout /></ProtectedRoute>}
         />
+
+         {/*--- FORGOT PASSWORD */}
+
+        <Route path="/forgot-password" element={<ForgotPassword />} />
 
         {/* ── Agent routes ── */}
         <Route

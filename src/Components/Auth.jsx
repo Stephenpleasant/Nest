@@ -571,7 +571,15 @@ const Auth = () => {
               </div>
             </div>
             <div className="forgot-link">
-              <Link to="/forgot-password">Forgot password?</Link>
+              <button
+                type="button"
+                onClick={() => navigate('/forgot-password')}
+                style={{ background:'none', border:'none', cursor:'pointer', fontSize:13, color:BLUE, fontWeight:500, fontFamily:"'Inter',sans-serif", padding:0, textDecoration:'none' }}
+                onMouseEnter={e => e.target.style.textDecoration='underline'}
+                onMouseLeave={e => e.target.style.textDecoration='none'}
+              >
+                Forgot password?
+              </button>
             </div>
           </>
         )}
